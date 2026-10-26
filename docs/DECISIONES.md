@@ -1,0 +1,7 @@
+# Decisiones
+
+Registro de decisiones tomadas ante ambigüedades del plan (regla 2 del plan de desarrollo).
+
+| Fecha | Tarea | Decisión |
+| --- | --- | --- |
+| 26/10/2026 | BE-01 | El agente no crea ni modifica `backend/.env` (instrucción explícita del usuario). Se entrega `backend/.env.example` con las variables del plan; cada integrante lo copia a `.env` con sus credenciales locales. |

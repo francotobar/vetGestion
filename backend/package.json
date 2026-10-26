@@ -1,0 +1,25 @@
+{
+  "name": "vetgestion-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend de vetGestión — sistema de turnos para veterinaria",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "TZ=America/Argentina/Buenos_Aires nodemon src/server.js",
+    "start": "TZ=America/Argentina/Buenos_Aires node src/server.js",
+    "test": "TZ=America/Argentina/Buenos_Aires jest --passWithNoTests"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "mysql2": "^3.11.5"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.0.0"
+  }
+}
