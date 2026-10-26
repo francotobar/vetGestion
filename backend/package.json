@@ -7,9 +7,12 @@
   "scripts": {
     "dev": "TZ=America/Argentina/Buenos_Aires nodemon src/server.js",
     "start": "TZ=America/Argentina/Buenos_Aires node src/server.js",
-    "test": "TZ=America/Argentina/Buenos_Aires jest --passWithNoTests"
+    "test": "TZ=America/Argentina/Buenos_Aires jest --passWithNoTests",
+    "db:reset": "TZ=America/Argentina/Buenos_Aires node db/reset.js",
+    "seed": "TZ=America/Argentina/Buenos_Aires node db/seed.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
