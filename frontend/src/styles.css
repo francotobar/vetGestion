@@ -1,0 +1,156 @@
+/* vetGestión — estilos base (CSS propio, simple y responsive; sin librerías) */
+
+:root {
+  --color-primario: #2563eb;
+  --color-primario-oscuro: #1d4ed8;
+  --color-oscuro: #0f172a;
+  --color-texto: #1f2937;
+  --color-suave: #f1f5f9;
+  --color-borde: #cbd5e1;
+  --color-error: #dc2626;
+  --color-ok: #16a34a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--color-texto);
+  background: var(--color-suave);
+}
+
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Barra de navegación --- */
+.navbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-oscuro);
+  color: #fff;
+}
+
+.navbar__marca {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+  text-decoration: none;
+}
+
+.navbar__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.navbar__links a {
+  color: #cbd5e1;
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.375rem;
+}
+
+.navbar__links a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.navbar__links a.active {
+  color: #fff;
+  background: var(--color-primario);
+}
+
+.navbar__salir {
+  margin-left: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #475569;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.navbar__salir:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Contenido --- */
+.contenido {
+  flex: 1;
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 1.25rem 1rem;
+}
+
+.pagina h1 {
+  margin-top: 0;
+  font-size: 1.5rem;
+}
+
+.pie {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.aviso {
+  color: #64748b;
+}
+
+/* --- Controles básicos (usados por las pantallas de los próximos días) --- */
+.boton {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  background: var(--color-primario);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.boton:hover {
+  background: var(--color-primario-oscuro);
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  background: #fff;
+}
+
+.error {
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0;
+}
+
+/* --- Móvil (por ejemplo 375 px) --- */
+@media (max-width: 480px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
