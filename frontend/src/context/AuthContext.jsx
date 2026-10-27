@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import api from '../api/cliente.js';
+import { cerrarSesion, iniciarSesion, usuarioActual } from '../api/auth.js';
 
 const AuthContext = createContext(null);
 
@@ -13,8 +13,7 @@ export function AuthProvider({ children }) {
   // queda como "sin sesión" sin romper la app.
   useEffect(() => {
     let activo = true;
-    api
-      .get('/auth/me')
+    usuarioActual()
       .then(({ data }) => {
         if (activo) setUsuario(data);
       })
@@ -29,15 +28,18 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  // Devuelve el usuario logueado para que la pantalla pueda redirigir
+  // según el rol (admin → /admin/agenda, cliente → /turnos; FE-02).
   async function login(datos) {
-    await api.post('/auth/login', datos);
-    const { data } = await api.get('/auth/me');
+    await iniciarSesion(datos);
+    const { data } = await usuarioActual();
     setUsuario(data);
+    return data;
   }
 
   async function logout() {
     try {
-      await api.post('/auth/logout');
+      await cerrarSesion();
     } finally {
       setUsuario(null);
     }
