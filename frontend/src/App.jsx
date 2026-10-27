@@ -2,6 +2,8 @@ import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import RutaProtegida from './components/RutaProtegida.jsx';
 import PaginaEnConstruccion from './components/PaginaEnConstruccion.jsx';
+import Login from './pages/publicas/Login.jsx';
+import Registro from './pages/publicas/Registro.jsx';
 
 // Tabla de rutas P0 (sección 8 del plan). Cada una muestra una página
 // provisoria hasta que su tarea (FE-02 en adelante) la implemente.
@@ -29,8 +31,8 @@ export default function App() {
       <Route element={<Layout />}>
         {/* Públicas */}
         <Route path="/" element={<PaginaEnConstruccion titulo="Inicio" />} />
-        <Route path="/login" element={<PaginaEnConstruccion titulo="Iniciar sesión" />} />
-        <Route path="/registro" element={<PaginaEnConstruccion titulo="Registro" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/registro" element={<Registro />} />
 
         {/* Cliente */}
         {rutasCliente.map(({ path, titulo }) => (
