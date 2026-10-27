@@ -13,6 +13,9 @@ app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+// Módulos (sección 6 del plan)
+app.use('/api/auth', require('./modules/auth/routes'));
+
 // HEALTH: chequeo de salud del sistema (BE-01)
 app.get('/api/salud', async (req, res) => {
   try {
