@@ -176,6 +176,18 @@ textarea {
   max-width: 480px;
 }
 
+.formulario--ancho {
+  max-width: 640px;
+  margin: 0;
+}
+
+/* Dos columnas en escritorio, una en móvil (formularios de mascotas) */
+.formulario__fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 0.9rem;
+}
+
 .campo {
   margin-bottom: 0.9rem;
 }
@@ -208,10 +220,140 @@ textarea {
   flex-shrink: 0;
 }
 
+/* --- Páginas y tarjetas (FE-03: mis mascotas) --- */
+.pagina__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.pagina__cabecera h1 {
+  margin: 0;
+}
+
+.pagina__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.estado-vacio {
+  background: #fff;
+  border: 1px dashed var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.tarjetas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.tarjeta {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1rem;
+}
+
+.tarjeta h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.tarjeta__detalle {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+}
+
+/* --- Ficha de mascota (lista de datos) --- */
+.ficha {
+  margin: 0;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.ficha dt {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.ficha dd {
+  margin: 0.15rem 0 0;
+}
+
+/* --- Modal de confirmación --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 10;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  width: min(420px, 100%);
+}
+
+.modal h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.modal__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* --- Variantes de botón --- */
+.boton--secundario {
+  background: #fff;
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+}
+
+.boton--secundario:hover {
+  background: var(--color-suave);
+}
+
+.boton--peligro {
+  background: var(--color-error);
+}
+
+.boton--peligro:hover {
+  background: #b91c1c;
+}
+
 /* --- Móvil (por ejemplo 375 px) --- */
 @media (max-width: 480px) {
   .navbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .formulario__fila {
+    grid-template-columns: 1fr;
   }
 }
