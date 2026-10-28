@@ -37,4 +37,43 @@ const reprogramarTurnoSchema = z.object({
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'La hora debe tener formato HH:MM'),
 });
 
-module.exports = { disponibilidadQuerySchema, crearTurnoSchema, reprogramarTurnoSchema };
+// GET /admin/turnos?desde=&hasta=&estado=
+const agendaAdminQuerySchema = z.object({
+  desde: z
+    .string()
+    .refine(esFechaValida, 'El parámetro "desde" debe ser una fecha válida (YYYY-MM-DD)')
+    .optional(),
+  hasta: z
+    .string()
+    .refine(esFechaValida, 'El parámetro "hasta" debe ser una fecha válida (YYYY-MM-DD)')
+    .optional(),
+  estado: z
+    .enum(['pendiente', 'confirmado', 'atendido', 'ausente', 'cancelado'], {
+      errorMap: () => ({ message: 'Estado de turno no válido' }),
+    })
+    .optional(),
+});
+
+// POST /admin/turnos (turno manual por admin, RF21)
+const crearTurnoAdminSchema = z.object({
+  usuario_id: enteroPositivo('usuario_id', 'El cliente'),
+  mascota_id: enteroPositivo('mascota_id', 'La mascota'),
+  servicio_id: enteroPositivo('servicio_id', 'El servicio'),
+  fecha: z
+    .string({ required_error: 'Falta la fecha' })
+    .refine(esFechaValida, 'La fecha debe ser válida (YYYY-MM-DD)'),
+  hora: z
+    .string({ required_error: 'Falta la hora' })
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'La hora debe tener formato HH:MM'),
+  canal: z.enum(['telefonico', 'presencial'], {
+    errorMap: () => ({ message: 'El canal debe ser "telefonico" o "presencial"' }),
+  }),
+});
+
+module.exports = {
+  disponibilidadQuerySchema,
+  crearTurnoSchema,
+  reprogramarTurnoSchema,
+  agendaAdminQuerySchema,
+  crearTurnoAdminSchema,
+};

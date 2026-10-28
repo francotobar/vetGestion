@@ -65,4 +65,36 @@ async function reprogramar(req, res, next) {
   }
 }
 
-module.exports = { disponibilidad, crear, misTurnos, cancelar, reprogramar };
+// GET /admin/turnos?desde=&hasta=&estado= (admin, RF21, BE-10).
+async function agendaAdmin(req, res, next) {
+  try {
+    const { agendaAdminQuerySchema } = require('./schema');
+    const consulta = agendaAdminQuerySchema.safeParse(req.query);
+    if (!consulta.success) {
+      const mensaje = consulta.error.issues.map((i) => i.message).join(' | ');
+      throw new ApiError(400, 'DATOS_INVALIDOS', mensaje);
+    }
+    res.json(await servicio.listarAgendaAdmin(consulta.data));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /admin/turnos (admin, RF21, BE-10).
+async function crearAdmin(req, res, next) {
+  try {
+    res.status(201).json(await servicio.crearComoAdmin(req.usuario.id, req.body));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  disponibilidad,
+  crear,
+  misTurnos,
+  cancelar,
+  reprogramar,
+  agendaAdmin,
+  crearAdmin,
+};

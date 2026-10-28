@@ -53,9 +53,12 @@ async function disponibilidad(fecha, ahora = new Date()) {
 async function obtenerTurno(id) {
   const [[turno]] = await pool.execute(
     `SELECT t.id, t.usuario_id, t.mascota_id, t.servicio_id, t.fecha_hora, t.estado, t.canal, t.es_urgencia, t.motivo,
+            t.creado_por, t.modificado_por, t.creado_en, t.modificado_en,
+            u.nombre AS cliente_nombre, u.apellido AS cliente_apellido, u.documento AS cliente_documento, u.telefono AS cliente_telefono,
             m.nombre AS mascota_nombre,
             s.nombre AS servicio_nombre
        FROM turnos t
+       JOIN usuarios u ON u.id = t.usuario_id
        JOIN mascotas m ON m.id = t.mascota_id
        JOIN servicios s ON s.id = t.servicio_id
       WHERE t.id = ?`,
@@ -220,10 +223,104 @@ async function reprogramarComoCliente(
   }
 }
 
+// GET /admin/turnos?desde=&hasta=&estado= (admin, sección 6 y 7 BE-10)
+// Agenda con joins a cliente, mascota y servicio, y filtros opcionales.
+async function listarAgendaAdmin({ desde, hasta, estado } = {}) {
+  const condiciones = [];
+  const params = [];
+
+  if (desde) {
+    condiciones.push('t.fecha_hora >= ?');
+    params.push(`${desde} 00:00:00`);
+  }
+
+  if (hasta) {
+    condiciones.push('t.fecha_hora <= ?');
+    params.push(`${hasta} 23:59:59`);
+  }
+
+  if (estado) {
+    condiciones.push('t.estado = ?');
+    params.push(estado);
+  }
+
+  const whereClause = condiciones.length > 0 ? `WHERE ${condiciones.join(' AND ')}` : '';
+
+  const [turnos] = await pool.execute(
+    `SELECT t.id, t.usuario_id, t.mascota_id, t.servicio_id, t.fecha_hora, t.estado, t.canal, t.es_urgencia, t.motivo,
+            t.creado_por, t.modificado_por, t.creado_en, t.modificado_en,
+            u.nombre AS cliente_nombre, u.apellido AS cliente_apellido, u.documento AS cliente_documento, u.telefono AS cliente_telefono,
+            m.nombre AS mascota_nombre, m.especie AS mascota_especie,
+            s.nombre AS servicio_nombre
+       FROM turnos t
+       JOIN usuarios u ON u.id = t.usuario_id
+       JOIN mascotas m ON m.id = t.mascota_id
+       JOIN servicios s ON s.id = t.servicio_id
+      ${whereClause}
+      ORDER BY t.fecha_hora ASC`,
+    params
+  );
+  return turnos;
+}
+
+// POST /admin/turnos (turno manual por admin, RF21 y BE-10)
+// Reglas sección 5:
+// - canal ∈ {telefonico, presencial}
+// - estado='confirmado'
+// - creado_por=adminId
+// - la mascota debe pertenecer al usuarioId indicado y estar activa (404 si no)
+// - el servicio debe existir y estar activo (404 si no)
+// - validarFranja(fecha, hora, ...)
+// - ER_DUP_ENTRY → 409 FRANJA_OCUPADA
+async function crearComoAdmin(
+  adminId,
+  { usuario_id, mascota_id, servicio_id, fecha, hora, canal },
+  ahora = new Date()
+) {
+  const [[usuario]] = await pool.execute('SELECT id FROM usuarios WHERE id = ?', [usuario_id]);
+  if (!usuario) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El cliente no existe');
+  }
+
+  const [[mascota]] = await pool.execute(
+    'SELECT id FROM mascotas WHERE id = ? AND usuario_id = ? AND activa = 1',
+    [mascota_id, usuario_id]
+  );
+  if (!mascota) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe o no pertenece al cliente');
+  }
+
+  const [[servicio]] = await pool.execute('SELECT id FROM servicios WHERE id = ? AND activo = 1', [
+    servicio_id,
+  ]);
+  if (!servicio) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El servicio no existe o no está activo');
+  }
+
+  const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+  validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+
+  try {
+    const [alta] = await pool.execute(
+      `INSERT INTO turnos (usuario_id, mascota_id, servicio_id, fecha_hora, estado, canal, creado_por)
+       VALUES (?, ?, ?, ?, 'confirmado', ?, ?)`,
+      [usuario_id, mascota_id, servicio_id, `${fecha} ${hora}:00`, canal, adminId]
+    );
+    return obtenerTurno(alta.insertId);
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja ya fue reservada');
+    }
+    throw err;
+  }
+}
+
 module.exports = {
   disponibilidad,
   crearComoCliente,
   misTurnos,
   cancelarComoCliente,
   reprogramarComoCliente,
+  listarAgendaAdmin,
+  crearComoAdmin,
 };
