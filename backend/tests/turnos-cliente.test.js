@@ -335,8 +335,9 @@ describe('PATCH /turnos/:id/reprogramar (cliente)', () => {
 
   test('antelación insuficiente en reprogramación (< 24 h) → 422 ANTELACION_INSUFICIENTE', async () => {
     const ahora = new Date();
-    const dentroDe5Hs = new Date(ahora.getTime() + 5 * 3600 * 1000);
-    const fechaHoraStr = dentroDe5Hs.toISOString().slice(0, 19).replace('T', ' ');
+    // Desplazamiento distinto a otros tests (6 horas en vez de 5) para garantizar fecha_hora única
+    const dentroDe6Hs = new Date(ahora.getTime() + 6 * 3600 * 1000);
+    const fechaHoraStr = dentroDe6Hs.toISOString().slice(0, 19).replace('T', ' ');
 
     const turnoId = await insertarTurnoDirecto({
       usuarioId: clienteId,
