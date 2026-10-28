@@ -2,6 +2,16 @@ const servicio = require('./service');
 const { ApiError } = require('../../utils/errores');
 const { disponibilidadQuerySchema } = require('./schema');
 
+// El :id de la ruta debe ser un entero positivo; si no lo es, responde 404 NO_ENCONTRADO.
+function parsearId(req) {
+  const id = Number(req.params.id);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function idInvalido() {
+  return new ApiError(404, 'NO_ENCONTRADO', 'El turno no existe');
+}
+
 // GET /turnos/disponibilidad?fecha=YYYY-MM-DD (cliente y admin, sección 6).
 async function disponibilidad(req, res, next) {
   try {
@@ -24,4 +34,35 @@ async function crear(req, res, next) {
   }
 }
 
-module.exports = { disponibilidad, crear };
+// GET /turnos/mios (cliente, RF10).
+async function misTurnos(req, res, next) {
+  try {
+    res.json(await servicio.misTurnos(req.usuario.id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /turnos/:id/cancelar (cliente, RF11).
+async function cancelar(req, res, next) {
+  try {
+    const id = parsearId(req);
+    if (!id) throw idInvalido();
+    res.json(await servicio.cancelarComoCliente(req.usuario.id, id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /turnos/:id/reprogramar (cliente, RF11).
+async function reprogramar(req, res, next) {
+  try {
+    const id = parsearId(req);
+    if (!id) throw idInvalido();
+    res.json(await servicio.reprogramarComoCliente(req.usuario.id, id, req.body));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { disponibilidad, crear, misTurnos, cancelar, reprogramar };

@@ -28,4 +28,13 @@ const crearTurnoSchema = z.object({
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'La hora debe tener formato HH:MM'),
 });
 
-module.exports = { disponibilidadQuerySchema, crearTurnoSchema };
+const reprogramarTurnoSchema = z.object({
+  fecha: z
+    .string({ required_error: 'Falta la fecha' })
+    .refine(esFechaValida, 'La fecha debe ser válida (YYYY-MM-DD)'),
+  hora: z
+    .string({ required_error: 'Falta la hora' })
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'La hora debe tener formato HH:MM'),
+});
+
+module.exports = { disponibilidadQuerySchema, crearTurnoSchema, reprogramarTurnoSchema };

@@ -1,9 +1,11 @@
+const { env } = require('../../config/env');
 const { pool } = require('../../config/db');
 const { ApiError } = require('../../utils/errores');
 const {
   generarFranjas,
   esDiaLaborable,
   validarFranja,
+  horasHasta,
   parsearFechaHora,
 } = require('../../utils/fechas');
 
@@ -50,10 +52,33 @@ async function disponibilidad(fecha, ahora = new Date()) {
 
 async function obtenerTurno(id) {
   const [[turno]] = await pool.execute(
-    'SELECT id, mascota_id, servicio_id, fecha_hora, estado FROM turnos WHERE id = ?',
+    `SELECT t.id, t.usuario_id, t.mascota_id, t.servicio_id, t.fecha_hora, t.estado, t.canal, t.es_urgencia, t.motivo,
+            m.nombre AS mascota_nombre,
+            s.nombre AS servicio_nombre
+       FROM turnos t
+       JOIN mascotas m ON m.id = t.mascota_id
+       JOIN servicios s ON s.id = t.servicio_id
+      WHERE t.id = ?`,
     [id]
   );
   return turno;
+}
+
+// GET /turnos/mios (cliente, sección 6 del plan).
+// Devuelve los turnos del cliente con los datos de mascota y servicio.
+async function misTurnos(usuarioId) {
+  const [turnos] = await pool.execute(
+    `SELECT t.id, t.mascota_id, t.servicio_id, t.fecha_hora, t.estado, t.canal, t.es_urgencia, t.motivo,
+            m.nombre AS mascota_nombre,
+            s.nombre AS servicio_nombre
+       FROM turnos t
+       JOIN mascotas m ON m.id = t.mascota_id
+       JOIN servicios s ON s.id = t.servicio_id
+      WHERE t.usuario_id = ?
+      ORDER BY t.fecha_hora DESC`,
+    [usuarioId]
+  );
+  return turnos;
 }
 
 // Reserva del cliente (sección 5):
@@ -103,4 +128,102 @@ async function crearComoCliente(
   }
 }
 
-module.exports = { disponibilidad, crearComoCliente };
+// Cancelación de turno por el cliente (sección 5 del plan):
+// * Solo turnos propios en 'pendiente' o 'confirmado'. Si es de otro cliente o no existe → 404.
+// * Si no está en 'pendiente' o 'confirmado' → 422 TRANSICION_INVALIDA.
+// * Si horasHasta(fecha_hora) < ANTELACION_HS → 422 ANTELACION_INSUFICIENTE.
+// * UPDATE estado='cancelado', modificado_por=usuarioId.
+async function cancelarComoCliente(usuarioId, turnoId, ahora = new Date()) {
+  const [[turno]] = await pool.execute(
+    'SELECT id, usuario_id, fecha_hora, estado FROM turnos WHERE id = ? AND usuario_id = ?',
+    [turnoId, usuarioId]
+  );
+  if (!turno) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El turno no existe');
+  }
+
+  if (!['pendiente', 'confirmado'].includes(turno.estado)) {
+    throw new ApiError(
+      422,
+      'TRANSICION_INVALIDA',
+      `No se puede cancelar un turno en estado "${turno.estado}"`
+    );
+  }
+
+  const horas = horasHasta(turno.fecha_hora, ahora);
+  if (horas < env.ANTELACION_HS) {
+    throw new ApiError(
+      422,
+      'ANTELACION_INSUFICIENTE',
+      `Los turnos solo pueden cancelarse con al menos ${env.ANTELACION_HS} horas de antelación`
+    );
+  }
+
+  await pool.execute(
+    'UPDATE turnos SET estado = ?, modificado_por = ? WHERE id = ?',
+    ['cancelado', usuarioId, turnoId]
+  );
+
+  return obtenerTurno(turnoId);
+}
+
+// Reprogramación de turno por el cliente (sección 5 del plan):
+// * Mismas validaciones de propiedad, estado y antelación (sobre el turno actual).
+// * validarFranja(nueva).
+// * UPDATE fecha_hora=?, estado='pendiente', modificado_por=?; capturar ER_DUP_ENTRY → 409 FRANJA_OCUPADA.
+// * Se hace con un único UPDATE (atómico).
+async function reprogramarComoCliente(
+  usuarioId,
+  turnoId,
+  { fecha, hora },
+  ahora = new Date()
+) {
+  const [[turno]] = await pool.execute(
+    'SELECT id, usuario_id, fecha_hora, estado FROM turnos WHERE id = ? AND usuario_id = ?',
+    [turnoId, usuarioId]
+  );
+  if (!turno) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El turno no existe');
+  }
+
+  if (!['pendiente', 'confirmado'].includes(turno.estado)) {
+    throw new ApiError(
+      422,
+      'TRANSICION_INVALIDA',
+      `No se puede reprogramar un turno en estado "${turno.estado}"`
+    );
+  }
+
+  const horas = horasHasta(turno.fecha_hora, ahora);
+  if (horas < env.ANTELACION_HS) {
+    throw new ApiError(
+      422,
+      'ANTELACION_INSUFICIENTE',
+      `Los turnos solo pueden reprogramarse con al menos ${env.ANTELACION_HS} horas de antelación`
+    );
+  }
+
+  const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+  validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+
+  try {
+    await pool.execute(
+      'UPDATE turnos SET fecha_hora = ?, estado = ?, modificado_por = ? WHERE id = ?',
+      [`${fecha} ${hora}:00`, 'pendiente', usuarioId, turnoId]
+    );
+    return obtenerTurno(turnoId);
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
+    }
+    throw err;
+  }
+}
+
+module.exports = {
+  disponibilidad,
+  crearComoCliente,
+  misTurnos,
+  cancelarComoCliente,
+  reprogramarComoCliente,
+};
