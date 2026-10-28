@@ -20,6 +20,7 @@ app.use('/api/servicios', require('./modules/servicios/routes').routerPublico);
 app.use('/api/admin/servicios', require('./modules/servicios/routes').routerAdmin);
 app.use('/api/feriados', require('./modules/feriados/routes').routerPublico);
 app.use('/api/admin/feriados', require('./modules/feriados/routes').routerAdmin);
+app.use('/api/turnos', require('./modules/turnos/routes'));
 
 // HEALTH: chequeo de salud del sistema (BE-01)
 app.get('/api/salud', async (req, res) => {
