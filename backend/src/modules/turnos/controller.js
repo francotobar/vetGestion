@@ -15,4 +15,13 @@ async function disponibilidad(req, res, next) {
   }
 }
 
-module.exports = { disponibilidad };
+// POST /turnos (reserva del cliente, RF09).
+async function crear(req, res, next) {
+  try {
+    res.status(201).json(await servicio.crearComoCliente(req.usuario.id, req.body));
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { disponibilidad, crear };

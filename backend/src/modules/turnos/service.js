@@ -1,5 +1,11 @@
 const { pool } = require('../../config/db');
-const { generarFranjas, esDiaLaborable, parsearFechaHora } = require('../../utils/fechas');
+const { ApiError } = require('../../utils/errores');
+const {
+  generarFranjas,
+  esDiaLaborable,
+  validarFranja,
+  parsearFechaHora,
+} = require('../../utils/fechas');
 
 // Formatea un Date local como 'YYYY-MM-DD' (regla 8: intercambio de fechas).
 function aFechaLocal(fecha) {
@@ -42,4 +48,59 @@ async function disponibilidad(fecha, ahora = new Date()) {
   });
 }
 
-module.exports = { disponibilidad };
+async function obtenerTurno(id) {
+  const [[turno]] = await pool.execute(
+    'SELECT id, mascota_id, servicio_id, fecha_hora, estado FROM turnos WHERE id = ?',
+    [id]
+  );
+  return turno;
+}
+
+// Reserva del cliente (sección 5):
+// 1. La mascota pertenece al usuario y está activa; si no → 404.
+// 2. El servicio existe y está activo; si no → 404.
+// 3. validarFranja(...) → 422 FRANJA_INVALIDA si no corresponde.
+// 4. INSERT pendiente / web.
+// 5. La restricción única de la BD (fecha_hora_activa) es la garantía contra
+//    la doble reserva: NO hay "SELECT y luego INSERT" como control; si MySQL
+//    lanza ER_DUP_ENTRY → 409 FRANJA_OCUPADA.
+// "ahora" es parametrizable como en disponibilidad (los tests lo fijan).
+async function crearComoCliente(
+  usuarioId,
+  { mascota_id, servicio_id, fecha, hora },
+  ahora = new Date()
+) {
+  const [[mascota]] = await pool.execute(
+    'SELECT id FROM mascotas WHERE id = ? AND usuario_id = ? AND activa = 1',
+    [mascota_id, usuarioId]
+  );
+  if (!mascota) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe');
+  }
+
+  const [[servicio]] = await pool.execute('SELECT id FROM servicios WHERE id = ? AND activo = 1', [
+    servicio_id,
+  ]);
+  if (!servicio) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El servicio no existe');
+  }
+
+  const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+  validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+
+  try {
+    const [alta] = await pool.execute(
+      `INSERT INTO turnos (usuario_id, mascota_id, servicio_id, fecha_hora, estado, canal, creado_por)
+       VALUES (?, ?, ?, ?, 'pendiente', 'web', ?)`,
+      [usuarioId, mascota_id, servicio_id, `${fecha} ${hora}:00`, usuarioId]
+    );
+    return obtenerTurno(alta.insertId);
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
+    }
+    throw err;
+  }
+}
+
+module.exports = { disponibilidad, crearComoCliente };
