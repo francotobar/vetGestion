@@ -116,4 +116,4 @@ function horasHasta(fechaHora, ahora) {
   return (fecha - ahora) / 3600000;
 }
 
-module.exports = { generarFranjas, esDiaLaborable, validarFranja, horasHasta };
+module.exports = { generarFranjas, esDiaLaborable, validarFranja, horasHasta, esFechaValida };
