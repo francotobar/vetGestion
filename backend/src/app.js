@@ -15,6 +15,7 @@ app.use(cookieParser());
 
 // Módulos (sección 6 del plan)
 app.use('/api/auth', require('./modules/auth/routes'));
+app.use('/api/mascotas', require('./modules/mascotas/routes'));
 
 // HEALTH: chequeo de salud del sistema (BE-01)
 app.get('/api/salud', async (req, res) => {
