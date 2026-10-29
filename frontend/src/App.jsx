@@ -4,13 +4,13 @@ import RutaProtegida from './components/RutaProtegida.jsx';
 import PaginaEnConstruccion from './components/PaginaEnConstruccion.jsx';
 import Login from './pages/publicas/Login.jsx';
 import Registro from './pages/publicas/Registro.jsx';
+import Mascotas from './pages/cliente/Mascotas.jsx';
+import MascotaNueva from './pages/cliente/MascotaNueva.jsx';
+import MascotaFicha from './pages/cliente/MascotaFicha.jsx';
 
 // Tabla de rutas P0 (sección 8 del plan). Cada una muestra una página
-// provisoria hasta que su tarea (FE-02 en adelante) la implemente.
+// provisoria hasta que su tarea (FE-04 en adelante) la implemente.
 const rutasCliente = [
-  { path: '/mascotas', titulo: 'Mis mascotas' },
-  { path: '/mascotas/nueva', titulo: 'Registrar mascota' },
-  { path: '/mascotas/:id', titulo: 'Ficha de la mascota' },
   { path: '/turnos', titulo: 'Mis turnos' },
   { path: '/turnos/nuevo', titulo: 'Reservar turno' },
 ];
@@ -35,6 +35,30 @@ export default function App() {
         <Route path="/registro" element={<Registro />} />
 
         {/* Cliente */}
+        <Route
+          path="/mascotas"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <Mascotas />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/mascotas/nueva"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <MascotaNueva />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/mascotas/:id"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <MascotaFicha />
+            </RutaProtegida>
+          }
+        />
         {rutasCliente.map(({ path, titulo }) => (
           <Route
             key={path}
