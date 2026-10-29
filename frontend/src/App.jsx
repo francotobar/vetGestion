@@ -7,12 +7,12 @@ import Registro from './pages/publicas/Registro.jsx';
 import Mascotas from './pages/cliente/Mascotas.jsx';
 import MascotaNueva from './pages/cliente/MascotaNueva.jsx';
 import MascotaFicha from './pages/cliente/MascotaFicha.jsx';
+import ReservarTurno from './pages/cliente/ReservarTurno.jsx';
 
 // Tabla de rutas P0 (sección 8 del plan). Cada una muestra una página
-// provisoria hasta que su tarea (FE-04 en adelante) la implemente.
+// provisoria hasta que su tarea (FE-05 en adelante) la implemente.
 const rutasCliente = [
   { path: '/turnos', titulo: 'Mis turnos' },
-  { path: '/turnos/nuevo', titulo: 'Reservar turno' },
 ];
 
 const rutasAdmin = [
@@ -56,6 +56,14 @@ export default function App() {
           element={
             <RutaProtegida roles={['cliente']}>
               <MascotaFicha />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/turnos/nuevo"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <ReservarTurno />
             </RutaProtegida>
           }
         />

@@ -346,6 +346,94 @@ textarea {
   background: #b91c1c;
 }
 
+/* --- Asistente de reserva de turno (FE-04) --- */
+.pasos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.pasos li + li::before {
+  content: '›';
+  margin-right: 0.35rem;
+  color: #94a3b8;
+}
+
+.pasos button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-primario);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.paso--actual {
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+/* Tarjeta elegible (mascota/servicio del asistente): se comporta como botón */
+.tarjeta.elegible {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tarjeta.elegible:hover {
+  border-color: var(--color-primario);
+}
+
+.elegible--activa {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 1px var(--color-primario);
+}
+
+/* Franjas disponibles (SelectorFranja) */
+.selector-franja__franjas {
+  margin-top: 0.5rem;
+}
+
+.franjas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.franja {
+  padding: 0.5rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.375rem;
+  background: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.franja:hover {
+  border-color: var(--color-primario);
+}
+
+.franja--activa {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+  color: #fff;
+}
+
+.franja--activa:hover {
+  background: var(--color-primario-oscuro);
+}
+
 /* --- Móvil (por ejemplo 375 px) --- */
 @media (max-width: 480px) {
   .navbar {
