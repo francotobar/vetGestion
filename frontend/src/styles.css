@@ -434,6 +434,65 @@ textarea {
   background: var(--color-primario-oscuro);
 }
 
+/* --- Estados de turno (FE-05: EstadoBadge) --- */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--pendiente {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge--confirmado {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge--atendido {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge--ausente {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.badge--cancelado {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* --- Turnos en tarjeta (FE-05: mis turnos) --- */
+.tarjeta__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tarjeta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Contenido extra dentro del modal (SelectorFranja al reprogramar) */
+.modal .selector-franja {
+  margin-top: 0.5rem;
+}
+
+.modal .error--caja {
+  margin-top: 0.75rem;
+}
+
 /* --- Móvil (por ejemplo 375 px) --- */
 @media (max-width: 480px) {
   .navbar {

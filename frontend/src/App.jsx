@@ -8,13 +8,10 @@ import Mascotas from './pages/cliente/Mascotas.jsx';
 import MascotaNueva from './pages/cliente/MascotaNueva.jsx';
 import MascotaFicha from './pages/cliente/MascotaFicha.jsx';
 import ReservarTurno from './pages/cliente/ReservarTurno.jsx';
+import MisTurnos from './pages/cliente/MisTurnos.jsx';
 
-// Tabla de rutas P0 (sección 8 del plan). Cada una muestra una página
-// provisoria hasta que su tarea (FE-05 en adelante) la implemente.
-const rutasCliente = [
-  { path: '/turnos', titulo: 'Mis turnos' },
-];
-
+// Las rutas P0 de admin (sección 8 del plan) muestran una página
+// provisoria hasta que su tarea (FE-06 en adelante) las implemente.
 const rutasAdmin = [
   { path: '/admin/agenda', titulo: 'Agenda' },
   { path: '/admin/turnos/nuevo', titulo: 'Turno manual' },
@@ -60,6 +57,14 @@ export default function App() {
           }
         />
         <Route
+          path="/turnos"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <MisTurnos />
+            </RutaProtegida>
+          }
+        />
+        <Route
           path="/turnos/nuevo"
           element={
             <RutaProtegida roles={['cliente']}>
@@ -67,17 +72,6 @@ export default function App() {
             </RutaProtegida>
           }
         />
-        {rutasCliente.map(({ path, titulo }) => (
-          <Route
-            key={path}
-            path={path}
-            element={
-              <RutaProtegida roles={['cliente']}>
-                <PaginaEnConstruccion titulo={titulo} />
-              </RutaProtegida>
-            }
-          />
-        ))}
 
         {/* Admin */}
         {rutasAdmin.map(({ path, titulo }) => (
