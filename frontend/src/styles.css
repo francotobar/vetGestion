@@ -493,6 +493,111 @@ textarea {
   margin-top: 0.75rem;
 }
 
+/* --- Agenda del admin (FE-06) --- */
+.agenda__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.agenda__nav input[type='date'] {
+  width: auto;
+}
+
+.agenda__semana-label {
+  flex: 1;
+  text-align: center;
+}
+
+/* Vista por día: hora fija a la izquierda + turno o franja libre */
+.agenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.agenda__fila {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.agenda__hora {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding-top: 0.6rem;
+  color: var(--color-oscuro);
+}
+
+.agenda__libre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--color-borde);
+  border-radius: 0.375rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.agenda__turno {
+  margin: 0;
+}
+
+.agenda__turno h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.agenda__urgencia {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+/* Vista semanal: 7 columnas con los turnos de cada día */
+.agenda__semana {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.agenda__dia {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.agenda__dia h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.agenda__dia-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Botón de urgencia (RF25) */
+.boton--urgencia {
+  background: #ea580c;
+}
+
+.boton--urgencia:hover {
+  background: #c2410c;
+}
+
 /* --- Móvil (por ejemplo 375 px) --- */
 @media (max-width: 480px) {
   .navbar {

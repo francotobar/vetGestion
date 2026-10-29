@@ -9,11 +9,11 @@ import MascotaNueva from './pages/cliente/MascotaNueva.jsx';
 import MascotaFicha from './pages/cliente/MascotaFicha.jsx';
 import ReservarTurno from './pages/cliente/ReservarTurno.jsx';
 import MisTurnos from './pages/cliente/MisTurnos.jsx';
+import Agenda from './pages/admin/Agenda.jsx';
 
-// Las rutas P0 de admin (sección 8 del plan) muestran una página
-// provisoria hasta que su tarea (FE-06 en adelante) las implemente.
+// Las rutas P0 de admin restantes (sección 8 del plan) muestran una página
+// provisoria hasta que su tarea (FE-07 en adelante) las implemente.
 const rutasAdmin = [
-  { path: '/admin/agenda', titulo: 'Agenda' },
   { path: '/admin/turnos/nuevo', titulo: 'Turno manual' },
   { path: '/admin/clientes', titulo: 'Clientes' },
   { path: '/admin/clientes/nuevo', titulo: 'Nuevo cliente' },
@@ -74,6 +74,14 @@ export default function App() {
         />
 
         {/* Admin */}
+        <Route
+          path="/admin/agenda"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <Agenda />
+            </RutaProtegida>
+          }
+        />
         {rutasAdmin.map(({ path, titulo }) => (
           <Route
             key={path}
