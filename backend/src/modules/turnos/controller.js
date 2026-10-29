@@ -89,6 +89,39 @@ async function crearAdmin(req, res, next) {
   }
 }
 
+// PATCH /admin/turnos/:id/estado (admin, RF21, BE-11).
+async function cambiarEstadoAdmin(req, res, next) {
+  try {
+    const id = parsearId(req);
+    if (!id) throw idInvalido();
+    res.json(await servicio.cambiarEstado(req.usuario.id, id, req.body.estado));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PATCH /admin/turnos/:id/reprogramar (admin, RF21, BE-11).
+async function reprogramarAdmin(req, res, next) {
+  try {
+    const id = parsearId(req);
+    if (!id) throw idInvalido();
+    res.json(await servicio.reprogramarComoAdmin(req.usuario.id, id, req.body));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /admin/turnos/:id/urgencia (admin, RF25, BE-11).
+async function urgenciaAdmin(req, res, next) {
+  try {
+    const id = parsearId(req);
+    if (!id) throw idInvalido();
+    res.json(await servicio.urgencia(req.usuario.id, id, req.body));
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   disponibilidad,
   crear,
@@ -97,4 +130,7 @@ module.exports = {
   reprogramar,
   agendaAdmin,
   crearAdmin,
+  cambiarEstadoAdmin,
+  reprogramarAdmin,
+  urgenciaAdmin,
 };

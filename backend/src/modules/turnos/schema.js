@@ -70,10 +70,57 @@ const crearTurnoAdminSchema = z.object({
   }),
 });
 
+// PATCH /admin/turnos/:id/estado (admin, RF21, BE-11)
+const cambiarEstadoSchema = z.object({
+  estado: z.enum(['pendiente', 'confirmado', 'atendido', 'ausente', 'cancelado'], {
+    errorMap: () => ({ message: 'Estado de turno no válido' }),
+  }),
+});
+
+// POST /admin/turnos/:id/urgencia (admin, RF25, BE-11)
+const urgenciaSchema = z
+  .object({
+    accion: z.enum(['cancelar', 'reprogramar'], {
+      errorMap: () => ({ message: 'La acción debe ser "cancelar" o "reprogramar"' }),
+    }),
+    motivo: z
+      .string({ required_error: 'El motivo es obligatorio' })
+      .trim()
+      .min(1, 'El motivo es obligatorio'),
+    fecha: z
+      .string()
+      .refine(esFechaValida, 'La fecha debe ser válida (YYYY-MM-DD)')
+      .optional(),
+    hora: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'La hora debe tener formato HH:MM')
+      .optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.accion === 'reprogramar') {
+      if (!data.fecha) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['fecha'],
+          message: 'Falta la fecha para reprogramar por urgencia',
+        });
+      }
+      if (!data.hora) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['hora'],
+          message: 'Falta la hora para reprogramar por urgencia',
+        });
+      }
+    }
+  });
+
 module.exports = {
   disponibilidadQuerySchema,
   crearTurnoSchema,
   reprogramarTurnoSchema,
   agendaAdminQuerySchema,
   crearTurnoAdminSchema,
+  cambiarEstadoSchema,
+  urgenciaSchema,
 };

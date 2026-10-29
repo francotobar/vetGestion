@@ -3,7 +3,13 @@ const controlador = require('./controller');
 const { validar } = require('../../middlewares/validar');
 const { auth } = require('../../middlewares/auth');
 const { roles } = require('../../middlewares/roles');
-const { crearTurnoSchema, reprogramarTurnoSchema, crearTurnoAdminSchema } = require('./schema');
+const {
+  crearTurnoSchema,
+  reprogramarTurnoSchema,
+  crearTurnoAdminSchema,
+  cambiarEstadoSchema,
+  urgenciaSchema,
+} = require('./schema');
 
 // Router de turnos cliente / C/A:
 // Franjas libres del día para reservar (C/A), reserva, consulta, cancelación y
@@ -21,12 +27,19 @@ routerCliente.patch(
   controlador.reprogramar
 );
 
-// Router de turnos admin (RF21, BE-10):
-// Agenda y turno manual.
+// Router de turnos admin (RF21, RF25, BE-10, BE-11):
+// Agenda, turno manual, cambio de estado, reprogramación admin y urgencias.
 const routerAdmin = express.Router();
 routerAdmin.use(auth, roles('admin'));
 routerAdmin.get('/', controlador.agendaAdmin);
 routerAdmin.post('/', validar(crearTurnoAdminSchema), controlador.crearAdmin);
+routerAdmin.patch('/:id/estado', validar(cambiarEstadoSchema), controlador.cambiarEstadoAdmin);
+routerAdmin.patch(
+  '/:id/reprogramar',
+  validar(reprogramarTurnoSchema),
+  controlador.reprogramarAdmin
+);
+routerAdmin.post('/:id/urgencia', validar(urgenciaSchema), controlador.urgenciaAdmin);
 
 module.exports = routerCliente;
 module.exports.routerCliente = routerCliente;

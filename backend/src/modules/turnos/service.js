@@ -315,6 +315,158 @@ async function crearComoAdmin(
   }
 }
 
+// Mapa de transiciones válidas de turnos (sección 5 del plan y RF21)
+const TRANSICIONES = {
+  pendiente: ['confirmado', 'cancelado'],
+  confirmado: ['atendido', 'ausente', 'cancelado'],
+  atendido: [],
+  ausente: [],
+  cancelado: [],
+};
+
+// PATCH /admin/turnos/:id/estado (admin, RF21, BE-11)
+async function cambiarEstado(adminId, turnoId, nuevoEstado) {
+  const [[turno]] = await pool.execute('SELECT id, estado FROM turnos WHERE id = ?', [turnoId]);
+  if (!turno) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El turno no existe');
+  }
+
+  const permitidos = TRANSICIONES[turno.estado] || [];
+  if (!permitidos.includes(nuevoEstado)) {
+    throw new ApiError(
+      422,
+      'TRANSICION_INVALIDA',
+      `No se puede pasar un turno de "${turno.estado}" a "${nuevoEstado}"`
+    );
+  }
+
+  await pool.execute(
+    'UPDATE turnos SET estado = ?, modificado_por = ? WHERE id = ?',
+    [nuevoEstado, adminId, turnoId]
+  );
+
+  return obtenerTurno(turnoId);
+}
+
+// PATCH /admin/turnos/:id/reprogramar (admin, sección 5 y RF21, BE-11)
+// Igual que el del cliente, sin antelación mínima y conservando el estado.
+async function reprogramarComoAdmin(
+  adminId,
+  turnoId,
+  { fecha, hora },
+  ahora = new Date()
+) {
+  const [[turno]] = await pool.execute(
+    'SELECT id, fecha_hora, estado FROM turnos WHERE id = ?',
+    [turnoId]
+  );
+  if (!turno) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El turno no existe');
+  }
+
+  if (!['pendiente', 'confirmado'].includes(turno.estado)) {
+    throw new ApiError(
+      422,
+      'TRANSICION_INVALIDA',
+      `No se puede reprogramar un turno en estado "${turno.estado}"`
+    );
+  }
+
+  const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+  validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+
+  try {
+    await pool.execute(
+      'UPDATE turnos SET fecha_hora = ?, modificado_por = ? WHERE id = ?',
+      [`${fecha} ${hora}:00`, adminId, turnoId]
+    );
+    return obtenerTurno(turnoId);
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
+    }
+    throw err;
+  }
+}
+
+// POST /admin/turnos/:id/urgencia (admin, RF25, BE-11)
+// * Sin antelación mínima. motivo obligatorio.
+// * accion='cancelar' → estado 'cancelado'.
+// * accion='reprogramar' → nueva franja validada (mismas reglas, 409 si ocupada), conserva estado.
+// * Siempre es_urgencia=1 y guarda el motivo.
+// * Responde { turno, cliente: { nombre, apellido, telefono, email } } para que el admin avise manualmente.
+async function urgencia(
+  adminId,
+  turnoId,
+  { accion, motivo, fecha, hora },
+  ahora = new Date()
+) {
+  const [[turno]] = await pool.execute(
+    `SELECT t.id, t.usuario_id, t.fecha_hora, t.estado,
+            u.nombre, u.apellido, u.telefono, u.email
+       FROM turnos t
+       JOIN usuarios u ON u.id = t.usuario_id
+      WHERE t.id = ?`,
+    [turnoId]
+  );
+  if (!turno) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El turno no existe');
+  }
+
+  if (!['pendiente', 'confirmado'].includes(turno.estado)) {
+    throw new ApiError(
+      422,
+      'TRANSICION_INVALIDA',
+      `No se puede cancelar o reprogramar por urgencia un turno en estado "${turno.estado}"`
+    );
+  }
+
+  if (accion === 'cancelar') {
+    await pool.execute(
+      `UPDATE turnos
+          SET estado = 'cancelado',
+              es_urgencia = 1,
+              motivo = ?,
+              modificado_por = ?
+        WHERE id = ?`,
+      [motivo, adminId, turnoId]
+    );
+  } else if (accion === 'reprogramar') {
+    const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+    validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+
+    try {
+      await pool.execute(
+        `UPDATE turnos
+            SET fecha_hora = ?,
+                es_urgencia = 1,
+                motivo = ?,
+                modificado_por = ?
+          WHERE id = ?`,
+        [`${fecha} ${hora}:00`, motivo, adminId, turnoId]
+      );
+    } catch (err) {
+      if (err.code === 'ER_DUP_ENTRY') {
+        throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
+      }
+      throw err;
+    }
+  } else {
+    throw new ApiError(400, 'DATOS_INVALIDOS', 'Acción no válida');
+  }
+
+  const turnoActualizado = await obtenerTurno(turnoId);
+  return {
+    turno: turnoActualizado,
+    cliente: {
+      nombre: turno.nombre,
+      apellido: turno.apellido,
+      telefono: turno.telefono,
+      email: turno.email,
+    },
+  };
+}
+
 module.exports = {
   disponibilidad,
   crearComoCliente,
@@ -323,4 +475,7 @@ module.exports = {
   reprogramarComoCliente,
   listarAgendaAdmin,
   crearComoAdmin,
+  cambiarEstado,
+  reprogramarComoAdmin,
+  urgencia,
 };
