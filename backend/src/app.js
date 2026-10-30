@@ -15,6 +15,16 @@ app.use(cookieParser());
 
 // Módulos (sección 6 del plan)
 app.use('/api/auth', require('./modules/auth/routes'));
+app.use('/api/mascotas', require('./modules/mascotas/routes'));
+app.use('/api/servicios', require('./modules/servicios/routes').routerPublico);
+app.use('/api/admin/servicios', require('./modules/servicios/routes').routerAdmin);
+app.use('/api/feriados', require('./modules/feriados/routes').routerPublico);
+app.use('/api/admin/feriados', require('./modules/feriados/routes').routerAdmin);
+app.use('/api/turnos', require('./modules/turnos/routes').routerCliente);
+app.use('/api/admin/turnos', require('./modules/turnos/routes').routerAdmin);
+app.use('/api/admin/atenciones', require('./modules/atenciones/routes'));
+app.use('/api/admin/clientes', require('./modules/clientes/routes').routerAdminClientes);
+app.use('/api/admin/mascotas', require('./modules/clientes/routes').routerAdminMascotas);
 
 // HEALTH: chequeo de salud del sistema (BE-01)
 app.get('/api/salud', async (req, res) => {

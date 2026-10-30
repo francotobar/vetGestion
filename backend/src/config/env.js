@@ -1,6 +1,10 @@
 // Carga las variables de entorno (backend/.env) y las expone con valores por defecto.
 // El .env nunca se commitea (ver .gitignore); cada integrante lo arma desde .env.example.
-require('dotenv').config();
+const path = require('path');
+
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+
+console.log('DB_USER en process.env:', process.env.DB_USER);
 
 const env = {
   PORT: Number(process.env.PORT) || 3000,
@@ -18,5 +22,12 @@ const env = {
   DIAS_MAX_RESERVA: Number(process.env.DIAS_MAX_RESERVA) || 60,
   TZ: process.env.TZ || 'America/Argentina/Buenos_Aires',
 };
+
+console.log({
+  DB_HOST: env.DB_HOST,
+  DB_PORT: env.DB_PORT,
+  DB_USER: env.DB_USER,
+  DB_NAME: env.DB_NAME,
+});
 
 module.exports = { env };

@@ -147,10 +147,465 @@ textarea {
   margin: 0.25rem 0 0;
 }
 
+.error--caja {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.aviso--ok {
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.375rem;
+  color: #166534;
+  padding: 0.5rem 0.75rem;
+}
+
+/* --- Formularios (FE-02: login y registro) --- */
+.formulario {
+  max-width: 420px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+}
+
+.formulario--registro {
+  max-width: 480px;
+}
+
+.formulario--ancho {
+  max-width: 640px;
+  margin: 0;
+}
+
+/* Dos columnas en escritorio, una en móvil (formularios de mascotas) */
+.formulario__fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 0.9rem;
+}
+
+.campo {
+  margin-bottom: 0.9rem;
+}
+
+.campo label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.campo__ayuda {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin: 0.25rem 0 0;
+}
+
+/* Checkbox de consentimiento (Ley 25.326): texto largo al lado de la casilla */
+.campo--checkbox label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-weight: 400;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.campo--checkbox input[type='checkbox'] {
+  width: auto;
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+/* --- Páginas y tarjetas (FE-03: mis mascotas) --- */
+.pagina__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.pagina__cabecera h1 {
+  margin: 0;
+}
+
+.pagina__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.estado-vacio {
+  background: #fff;
+  border: 1px dashed var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.tarjetas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.tarjeta {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1rem;
+}
+
+.tarjeta h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.tarjeta__detalle {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+}
+
+/* --- Ficha de mascota (lista de datos) --- */
+.ficha {
+  margin: 0;
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.ficha dt {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.ficha dd {
+  margin: 0.15rem 0 0;
+}
+
+/* --- Modal de confirmación --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 10;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  width: min(420px, 100%);
+}
+
+.modal h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.modal__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* --- Variantes de botón --- */
+.boton--secundario {
+  background: #fff;
+  color: var(--color-texto);
+  border: 1px solid var(--color-borde);
+}
+
+.boton--secundario:hover {
+  background: var(--color-suave);
+}
+
+.boton--peligro {
+  background: var(--color-error);
+}
+
+.boton--peligro:hover {
+  background: #b91c1c;
+}
+
+/* --- Asistente de reserva de turno (FE-04) --- */
+.pasos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.pasos li + li::before {
+  content: '›';
+  margin-right: 0.35rem;
+  color: #94a3b8;
+}
+
+.pasos button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-primario);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.paso--actual {
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+/* Tarjeta elegible (mascota/servicio del asistente): se comporta como botón */
+.tarjeta.elegible {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.tarjeta.elegible:hover {
+  border-color: var(--color-primario);
+}
+
+.elegible--activa {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 1px var(--color-primario);
+}
+
+/* Franjas disponibles (SelectorFranja) */
+.selector-franja__franjas {
+  margin-top: 0.5rem;
+}
+
+.franjas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.franja {
+  padding: 0.5rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.375rem;
+  background: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.franja:hover {
+  border-color: var(--color-primario);
+}
+
+.franja--activa {
+  background: var(--color-primario);
+  border-color: var(--color-primario);
+  color: #fff;
+}
+
+.franja--activa:hover {
+  background: var(--color-primario-oscuro);
+}
+
+/* --- Estados de turno (FE-05: EstadoBadge) --- */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--pendiente {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge--confirmado {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.badge--atendido {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge--ausente {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.badge--cancelado {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* --- Turnos en tarjeta (FE-05: mis turnos) --- */
+.tarjeta__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tarjeta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Contenido extra dentro del modal (SelectorFranja al reprogramar) */
+.modal .selector-franja {
+  margin-top: 0.5rem;
+}
+
+.modal .error--caja {
+  margin-top: 0.75rem;
+}
+
+/* --- Agenda del admin (FE-06) --- */
+.agenda__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.agenda__nav input[type='date'] {
+  width: auto;
+}
+
+.agenda__semana-label {
+  flex: 1;
+  text-align: center;
+}
+
+/* Vista por día: hora fija a la izquierda + turno o franja libre */
+.agenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.agenda__fila {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.75rem;
+  align-items: start;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.agenda__hora {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding-top: 0.6rem;
+  color: var(--color-oscuro);
+}
+
+.agenda__libre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--color-borde);
+  border-radius: 0.375rem;
+  color: #64748b;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.agenda__turno {
+  margin: 0;
+}
+
+.agenda__turno h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.agenda__urgencia {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+/* Vista semanal: 7 columnas con los turnos de cada día */
+.agenda__semana {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.agenda__dia {
+  background: #fff;
+  border: 1px solid var(--color-borde);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.agenda__dia h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.agenda__dia-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* Botón de urgencia (RF25) */
+.boton--urgencia {
+  background: #ea580c;
+}
+
+.boton--urgencia:hover {
+  background: #c2410c;
+}
+
 /* --- Móvil (por ejemplo 375 px) --- */
 @media (max-width: 480px) {
   .navbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .formulario__fila {
+    grid-template-columns: 1fr;
   }
 }

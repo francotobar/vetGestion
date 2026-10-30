@@ -35,4 +35,17 @@ const loginSchema = z.object({
   password: z.string({ required_error: 'Falta la contraseña' }).min(1, 'Falta la contraseña'),
 });
 
-module.exports = { registroSchema, loginSchema };
+const desbloquearSchema = z.object({
+  password: passwordSchema.optional(),
+});
+
+const recuperarSchema = z.object({
+  email: z.string().trim().email('Email inválido').optional().default(null),
+});
+
+const restablecerSchema = z.object({
+  token: z.string({ required_error: 'Falta el token' }),
+  password: passwordSchema,
+});
+
+module.exports = { registroSchema, loginSchema, passwordSchema, desbloquearSchema, recuperarSchema, restablecerSchema };

@@ -2,23 +2,22 @@ import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import RutaProtegida from './components/RutaProtegida.jsx';
 import PaginaEnConstruccion from './components/PaginaEnConstruccion.jsx';
+import Login from './pages/publicas/Login.jsx';
+import Registro from './pages/publicas/Registro.jsx';
+import Mascotas from './pages/cliente/Mascotas.jsx';
+import MascotaNueva from './pages/cliente/MascotaNueva.jsx';
+import MascotaFicha from './pages/cliente/MascotaFicha.jsx';
+import ReservarTurno from './pages/cliente/ReservarTurno.jsx';
+import MisTurnos from './pages/cliente/MisTurnos.jsx';
+import Agenda from './pages/admin/Agenda.jsx';
+import TurnoManual from './pages/admin/TurnoManual.jsx';
+import Clientes from './pages/admin/Clientes.jsx';
+import ClienteAlta from './pages/admin/ClienteAlta.jsx';
+import ClienteFicha from './pages/admin/ClienteFicha.jsx';
 
-// Tabla de rutas P0 (sección 8 del plan). Cada una muestra una página
-// provisoria hasta que su tarea (FE-02 en adelante) la implemente.
-const rutasCliente = [
-  { path: '/mascotas', titulo: 'Mis mascotas' },
-  { path: '/mascotas/nueva', titulo: 'Registrar mascota' },
-  { path: '/mascotas/:id', titulo: 'Ficha de la mascota' },
-  { path: '/turnos', titulo: 'Mis turnos' },
-  { path: '/turnos/nuevo', titulo: 'Reservar turno' },
-];
-
+// Las rutas P0 de admin restantes (sección 8 del plan) muestran una página
+// provisoria hasta que su tarea (FE-09 en adelante) las implemente.
 const rutasAdmin = [
-  { path: '/admin/agenda', titulo: 'Agenda' },
-  { path: '/admin/turnos/nuevo', titulo: 'Turno manual' },
-  { path: '/admin/clientes', titulo: 'Clientes' },
-  { path: '/admin/clientes/nuevo', titulo: 'Nuevo cliente' },
-  { path: '/admin/clientes/:id', titulo: 'Ficha del cliente' },
   { path: '/admin/servicios', titulo: 'Servicios' },
   { path: '/admin/feriados', titulo: 'Feriados' },
 ];
@@ -29,23 +28,92 @@ export default function App() {
       <Route element={<Layout />}>
         {/* Públicas */}
         <Route path="/" element={<PaginaEnConstruccion titulo="Inicio" />} />
-        <Route path="/login" element={<PaginaEnConstruccion titulo="Iniciar sesión" />} />
-        <Route path="/registro" element={<PaginaEnConstruccion titulo="Registro" />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/registro" element={<Registro />} />
 
         {/* Cliente */}
-        {rutasCliente.map(({ path, titulo }) => (
-          <Route
-            key={path}
-            path={path}
-            element={
-              <RutaProtegida roles={['cliente']}>
-                <PaginaEnConstruccion titulo={titulo} />
-              </RutaProtegida>
-            }
-          />
-        ))}
+        <Route
+          path="/mascotas"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <Mascotas />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/mascotas/nueva"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <MascotaNueva />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/mascotas/:id"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <MascotaFicha />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/turnos"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <MisTurnos />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/turnos/nuevo"
+          element={
+            <RutaProtegida roles={['cliente']}>
+              <ReservarTurno />
+            </RutaProtegida>
+          }
+        />
 
         {/* Admin */}
+        <Route
+          path="/admin/agenda"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <Agenda />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/admin/turnos/nuevo"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <TurnoManual />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/admin/clientes"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <Clientes />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/admin/clientes/nuevo"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <ClienteAlta />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/admin/clientes/:id"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <ClienteFicha />
+            </RutaProtegida>
+          }
+        />
         {rutasAdmin.map(({ path, titulo }) => (
           <Route
             key={path}
