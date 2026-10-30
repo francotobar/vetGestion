@@ -119,6 +119,18 @@ async function desbloquearCliente(req, res, next) {
   }
 }
 
+// POST /admin/clientes/:id/anonimizar (BE-15)
+async function anonimizarCliente(req, res, next) {
+  try {
+    const id = parsearId(req);
+    if (!id) throw new ApiError(404, 'NO_ENCONTRADO', 'El cliente no existe');
+    const resultado = await servicio.anonimizarCliente(req.usuario.id, id);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   buscarClientes,
   crearCliente,
@@ -126,6 +138,7 @@ module.exports = {
   actualizarCliente,
   darDeBajaCliente,
   desbloquearCliente,
+  anonimizarCliente,
   listarMascotasCliente,
   crearMascotaCliente,
   actualizarMascotaAdmin,

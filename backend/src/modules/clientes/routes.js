@@ -19,6 +19,7 @@ routerAdminClientes.get('/:id', controlador.obtenerCliente);
 routerAdminClientes.put('/:id', validar(editarClienteSchema), controlador.actualizarCliente);
 routerAdminClientes.post('/:id/baja', controlador.darDeBajaCliente);
 routerAdminClientes.post('/:id/desbloquear', validar(desbloquearSchema), controlador.desbloquearCliente);
+routerAdminClientes.post('/:id/anonimizar', controlador.anonimizarCliente);
 routerAdminClientes.get('/:id/mascotas', controlador.listarMascotasCliente);
 routerAdminClientes.post('/:id/mascotas', validar(mascotaSchema), controlador.crearMascotaCliente);
 

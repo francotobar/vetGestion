@@ -306,12 +306,80 @@ async function desbloquearCliente(adminId, clienteId, datos) {
   return authService.desbloquearPorAdmin(adminId, clienteId, datos);
 }
 
+// POST /admin/clientes/:id/anonimizar (BE-15, RNF04 Ley 25.326).
+// Anonimiza un cliente por supresión: reemplaza datos personales, deja mascotas
+// inactivas y cancela sus turnos futuros. Todo en una transacción atómica: si
+// algo falla, no queda un cliente a medias. No toca atenciones (RF26, inmutables).
+async function anonimizarCliente(adminId, clienteId) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [[cliente]] = await conn.execute(
+      `SELECT id FROM usuarios WHERE id = ? AND rol = 'cliente'`,
+      [clienteId]
+    );
+    if (!cliente) {
+      await conn.rollback();
+      throw new ApiError(404, 'NO_ENCONTRADO', 'El cliente no existe');
+    }
+
+    const ahora = new Date();
+
+    // 1. Datos del cliente: nombre, apellido, documento, telefono, email,
+    //    password_hash y estado_cuenta.
+    await conn.execute(
+      `UPDATE usuarios
+         SET nombre = 'Anonimizado',
+             apellido = '',
+             documento = ?,
+             telefono = '-',
+             email = NULL,
+             password_hash = NULL,
+             estado_cuenta = 'inactiva',
+             modificado_por = ?
+       WHERE id = ? AND rol = 'cliente'`,
+      [`ANON-${clienteId}`, adminId, clienteId]
+    );
+
+    // 2. Mascotas del cliente: baja lógica.
+    await conn.execute(
+      'UPDATE mascotas SET activa = 0, modificado_por = ? WHERE usuario_id = ?',
+      [adminId, clienteId]
+    );
+
+    // 3. Turnos futuros (pendiente/confirmado) del cliente: se cancelan.
+    //    Los turnos ya atendidos/ausentes/cancelados no se tocan.
+    await conn.execute(
+      `UPDATE turnos
+         SET estado = 'cancelado', modificado_por = ?
+       WHERE usuario_id = ?
+         AND estado IN ('pendiente', 'confirmado')
+         AND fecha_hora > ?`,
+      [adminId, clienteId, ahora]
+    );
+
+    await conn.commit();
+    return { mensaje: 'Cliente anonimizado', id: clienteId };
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch (_) {
+      // Ignora errores al hacer rollback; el error original prevalece.
+    }
+    throw err;
+  } finally {
+    await conn.release();
+  }
+}
+
 module.exports = {
   buscarClientes,
   crearCliente,
   obtenerCliente,
   actualizarCliente,
   darDeBajaCliente,
+  anonimizarCliente,
   desbloquearCliente,
   listarMascotasCliente,
   crearMascotaCliente,
