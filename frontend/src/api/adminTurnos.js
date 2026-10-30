@@ -2,6 +2,7 @@ import api from './cliente.js';
 
 // Endpoints de la agenda del administrador (sección 6 del plan, BE-10/BE-11):
 //   GET   /admin/turnos?desde=&hasta=&estado=  → agenda con joins (A)
+//   POST  /admin/turnos                        → turno manual (A), RF21
 //   PATCH /admin/turnos/:id/estado             → cambiar estado (A)
 //   PATCH /admin/turnos/:id/reprogramar        → reprogramar sin antelación (A)
 //   POST  /admin/turnos/:id/urgencia           → cancelar/reprogramar por urgencia (A)
@@ -46,6 +47,24 @@ export function agenda({ desde, hasta, estado } = {}) {
     ...respuesta,
     data: respuesta.data.map(aCamel),
   }));
+}
+
+// Turno manual (POST /admin/turnos, RF21 y BE-10): el backend lo crea en
+// estado 'confirmado', con canal ∈ {telefonico, presencial} y creado_por =
+// admin. Errores: 404 (cliente/mascota/servicio inexistente o inactivo),
+// 422 FRANJA_INVALIDA (fin de semana, feriado, fuera del horario o plazo),
+// 409 FRANJA_OCUPADA si la franja ya estaba tomada.
+export function crear({ usuarioId, mascotaId, servicioId, fecha, hora, canal }) {
+  return api
+    .post('/admin/turnos', {
+      usuario_id: usuarioId,
+      mascota_id: mascotaId,
+      servicio_id: servicioId,
+      fecha,
+      hora,
+      canal,
+    })
+    .then((respuesta) => ({ ...respuesta, data: aCamel(respuesta.data) }));
 }
 
 // Cambio de estado (PATCH /admin/turnos/:id/estado, body { estado }).
