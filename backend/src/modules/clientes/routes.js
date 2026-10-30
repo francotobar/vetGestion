@@ -4,10 +4,11 @@ const { validar } = require('../../middlewares/validar');
 const { auth } = require('../../middlewares/auth');
 const { roles } = require('../../middlewares/roles');
 const { altaClienteSchema, editarClienteSchema } = require('./schema');
+const { desbloquearSchema } = require('../auth/schema');
 const { mascotaSchema } = require('../mascotas/schema');
 
-// Router para /api/admin/clientes (sección 6 del plan, BE-12):
-// Búsqueda, alta asistida (RF01b, RF24), ver/editar cliente, baja lógica y gestión de sus mascotas.
+// Router para /api/admin/clientes (sección 6 del plan, BE-12 y BE-13):
+// Búsqueda, alta asistida (RF01b, RF24), ver/editar cliente, baja lógica, desbloqueo y gestión de sus mascotas.
 const routerAdminClientes = express.Router();
 routerAdminClientes.use(auth, roles('admin'));
 
@@ -16,6 +17,7 @@ routerAdminClientes.post('/', validar(altaClienteSchema), controlador.crearClien
 routerAdminClientes.get('/:id', controlador.obtenerCliente);
 routerAdminClientes.put('/:id', validar(editarClienteSchema), controlador.actualizarCliente);
 routerAdminClientes.post('/:id/baja', controlador.darDeBajaCliente);
+routerAdminClientes.post('/:id/desbloquear', validar(desbloquearSchema), controlador.desbloquearCliente);
 routerAdminClientes.get('/:id/mascotas', controlador.listarMascotasCliente);
 routerAdminClientes.post('/:id/mascotas', validar(mascotaSchema), controlador.crearMascotaCliente);
 

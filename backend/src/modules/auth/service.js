@@ -127,4 +127,71 @@ function cerrarSesion(res) {
   return { mensaje: 'Sesión cerrada' };
 }
 
-module.exports = { registro, login, cerrarSesion, mapearUsuario };
+// Desbloqueo por admin (sección 5, 6 y 7 - BE-13):
+// bloqueado=0, intentos_fallidos=0 y nueva contraseña temporal opcional.
+async function desbloquearPorAdmin(adminId, clienteId, { password } = {}) {
+  const [[usuario]] = await pool.execute(
+    `SELECT id, rol, documento, nombre, apellido, telefono, email,
+            password_hash, estado_cuenta, intentos_fallidos, bloqueado
+       FROM usuarios WHERE id = ? AND rol = 'cliente'`,
+    [clienteId]
+  );
+
+  if (!usuario) {
+    throw new ApiError(404, 'NO_ENCONTRADO', 'El cliente no existe');
+  }
+
+  let hash = null;
+  if (password) {
+    hash = await hashPassword(password);
+  }
+
+  if (hash) {
+    await pool.execute(
+      `UPDATE usuarios
+          SET bloqueado = 0,
+              intentos_fallidos = 0,
+              password_hash = ?,
+              estado_cuenta = IF(estado_cuenta = 'sin_cuenta', 'con_cuenta', estado_cuenta),
+              modificado_por = ?
+        WHERE id = ?`,
+      [hash, adminId, clienteId]
+    );
+  } else {
+    await pool.execute(
+      `UPDATE usuarios
+          SET bloqueado = 0,
+              intentos_fallidos = 0,
+              modificado_por = ?
+        WHERE id = ?`,
+      [adminId, clienteId]
+    );
+  }
+
+  const [[actualizado]] = await pool.execute(
+    `SELECT id, rol, documento, nombre, apellido, telefono, email,
+            estado_cuenta, bloqueado, intentos_fallidos, creado_en, modificado_en
+       FROM usuarios WHERE id = ?`,
+    [clienteId]
+  );
+
+  return {
+    mensaje: 'Cliente desbloqueado correctamente',
+    cliente: {
+      id: actualizado.id,
+      rol: actualizado.rol,
+      documento: actualizado.documento,
+      nombre: actualizado.nombre,
+      apellido: actualizado.apellido,
+      telefono: actualizado.telefono,
+      email: actualizado.email,
+      estado_cuenta: actualizado.estado_cuenta,
+      bloqueado: actualizado.bloqueado === 1,
+      intentos_fallidos: actualizado.intentos_fallidos,
+      creado_en: actualizado.creado_en,
+      modificado_en: actualizado.modificado_en,
+    },
+  };
+}
+
+module.exports = { registro, login, cerrarSesion, mapearUsuario, desbloquearPorAdmin };

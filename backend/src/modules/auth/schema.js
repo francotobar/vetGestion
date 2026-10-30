@@ -35,4 +35,8 @@ const loginSchema = z.object({
   password: z.string({ required_error: 'Falta la contraseña' }).min(1, 'Falta la contraseña'),
 });
 
-module.exports = { registroSchema, loginSchema };
+const desbloquearSchema = z.object({
+  password: passwordSchema.optional(),
+});
+
+module.exports = { registroSchema, loginSchema, passwordSchema, desbloquearSchema };

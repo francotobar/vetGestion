@@ -1,5 +1,6 @@
 const { pool } = require('../../config/db');
 const { ApiError } = require('../../utils/errores');
+const authService = require('../auth/service');
 
 // Mapeo público de cliente para admin (sección 4 y 6).
 function mapearCliente(fila) {
@@ -300,12 +301,18 @@ async function actualizarMascotaAdmin(adminId, mascotaId, datos) {
   return mapearMascota(actualizada);
 }
 
+// POST /admin/clientes/:id/desbloquear (BE-13)
+async function desbloquearCliente(adminId, clienteId, datos) {
+  return authService.desbloquearPorAdmin(adminId, clienteId, datos);
+}
+
 module.exports = {
   buscarClientes,
   crearCliente,
   obtenerCliente,
   actualizarCliente,
   darDeBajaCliente,
+  desbloquearCliente,
   listarMascotasCliente,
   crearMascotaCliente,
   actualizarMascotaAdmin,

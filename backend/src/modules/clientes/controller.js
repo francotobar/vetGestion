@@ -107,12 +107,25 @@ async function actualizarMascotaAdmin(req, res, next) {
   }
 }
 
+// POST /admin/clientes/:id/desbloquear (BE-13)
+async function desbloquearCliente(req, res, next) {
+  try {
+    const id = parsearId(req);
+    if (!id) throw new ApiError(404, 'NO_ENCONTRADO', 'El cliente no existe');
+    const resultado = await servicio.desbloquearCliente(req.usuario.id, id, req.body);
+    res.json(resultado);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   buscarClientes,
   crearCliente,
   obtenerCliente,
   actualizarCliente,
   darDeBajaCliente,
+  desbloquearCliente,
   listarMascotasCliente,
   crearMascotaCliente,
   actualizarMascotaAdmin,
