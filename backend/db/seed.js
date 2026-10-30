@@ -141,10 +141,7 @@ async function main() {
       motivo: 'El cliente canceló por teléfono',
     });
 
-    console.log(
-      `Seed OK: 1 admin, 3 clientes (2 con cuenta, 1 sin cuenta [id ${clienteSinCuenta}]), ` +
-      '3 mascotas, 5 servicios, 2 feriados y 5 turnos.'
-    );
+    
   } finally {
     await db.end();
   }

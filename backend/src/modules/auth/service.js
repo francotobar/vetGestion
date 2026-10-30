@@ -1,8 +1,15 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { env } = require('../../config/env');
 const { pool } = require('../../config/db');
 const { ApiError } = require('../../utils/errores');
 const { hashPassword, compararPassword } = require('../../utils/password');
+const { z } = require('zod');
+
+// Hash SHA-256 de un token (para almacenar de forma segura)
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 // Sesión: JWT de 8 h en cookie httpOnly SameSite=Lax (sección 2 del plan).
 // Decisión: el nombre de la cookie es "token" (el plan no lo fija).
@@ -194,4 +201,120 @@ async function desbloquearPorAdmin(adminId, clienteId, { password } = {}) {
   };
 }
 
-module.exports = { registro, login, cerrarSesion, mapearUsuario, desbloquearPorAdmin };
+// Función para recuperar contraseña por email (BE-16, P1)
+async function recuperarPorEmail(email) {
+  const [[usuario]] = await pool.execute(
+    `SELECT id, rol, documento, nombre, apellido, telefono, email,
+            password_hash, estado_cuenta, bloqueado, intentos_fallidos, reset_token_hash, reset_expira
+       FROM usuarios WHERE email = ?`,
+    [email]
+  );
+
+  const ahora = new Date();
+
+  if (usuario && usuario.reset_token_hash && usuario.reset_expira && usuario.reset_expira > ahora) {
+    // Token ya existente y vigente: renovarlo
+    const tokenAleatorio = crypto.randomBytes(32).toString('hex');
+    const hashNuevo = hashToken(tokenAleatorio);
+    const expira = new Date(ahora.getTime() + 60 * 60 * 1000); // 1 hora
+
+    await pool.execute(
+      `UPDATE usuarios SET reset_token_hash = ?, reset_expira = ? WHERE id = ?`,
+      [hashNuevo, expira, usuario.id]
+    );
+    return { token: tokenAleatorio, expira, renovado: true, usuario: { id: usuario.id, email: usuario.email } };
+  }
+
+  if (!usuario) {
+    // Email no registrado: generamos un token igualmente para no filtrar información
+    // sobre qué emails están registrados, pero sin asociarlo a un usuario real
+    const tokenAleatorio = crypto.randomBytes(32).toString('hex');
+    const expira = new Date(ahora.getTime() + 60 * 60 * 1000); // 1 hora
+    return { token: tokenAleatorio, expira, nuevo: true, usuario: null };
+  }
+
+  // Usuario existe pero sin token previo: crear uno nuevo
+  const tokenAleatorio = crypto.randomBytes(32).toString('hex');
+  const hash = hashToken(tokenAleatorio);
+  const expira = new Date(ahora.getTime() + 60 * 60 * 1000); // 1 hora
+
+  await pool.execute(
+    `UPDATE usuarios SET reset_token_hash = ?, reset_expira = ? WHERE id = ?`,
+    [hash, expira, usuario.id]
+  );
+  return { token: tokenAleatorio, expira, renovado: false, usuario: { id: usuario.id, email: usuario.email } };
+}
+
+// RESTABLECER Contraseña por token (BE-16, P1)
+async function restablecerPorToken({ token, password }) {
+  const hashSolicitado = hashToken(token);
+  const ahora = new Date();
+
+  // Buscar usuario por hash de token y verificar que no haya expirado
+  const [[usuario]] = await pool.execute(
+    `SELECT id, rol, documento, nombre, apellido, telefono, email,
+            password_hash, estado_cuenta, bloqueado, intentos_fallidos, reset_token_hash, reset_expira
+       FROM usuarios WHERE reset_token_hash = ?`,
+    [hashSolicitado]
+  );
+
+  if (!usuario) {
+    throw new ApiError(400, 'TOKEN_INVALIDO', 'Token inválido o expirado');
+  }
+
+  if (usuario.reset_expira < ahora) {
+    // Token vencido: limpiar y lanzar error
+    await pool.execute(`UPDATE usuarios SET reset_token_hash = NULL, reset_expira = NULL WHERE id = ?`, [usuario.id]);
+    throw new ApiError(400, 'TOKEN_VENCIDO', 'Token vencido');
+  }
+
+  // Validar regla de contraseña: ≥ 6 caracteres y ≥ 2 dígitos
+  const passwordSchema = z
+    .string({ required_error: 'Falta la contraseña' })
+    .regex(/^(?=(?:.*\d){2,}).{6,}$/, 'La contraseña debe tener al menos 6 caracteres y 2 números');
+
+  const resultado = passwordSchema.safeParse(password);
+  if (!resultado.success) {
+    throw new ApiError(400, 'CONTRASEÑA_INVALIDA', resultado.error.errors[0].message);
+  }
+
+  const hashNuevo = await hashPassword(password);
+
+  await pool.execute(
+    `UPDATE usuarios
+       SET password_hash = ?,
+           bloqueado = 0,
+           intentos_fallidos = 0,
+           reset_token_hash = NULL,
+           reset_expira = NULL
+     WHERE id = ?`,
+    [hashNuevo, usuario.id]
+  );
+
+  const [[actualizado]] = await pool.execute(
+    `SELECT id, rol, documento, nombre, apellido, telefono, email,
+            estado_cuenta, bloqueado, intentos_fallidos, creado_en, modificado_en
+       FROM usuarios WHERE id = ?`,
+    [usuario.id]
+  );
+
+  return {
+    mensaje: 'Contraseña restablecida correctamente',
+    cliente: {
+      id: actualizado.id,
+      rol: actualizado.rol,
+      documento: actualizado.documento,
+      nombre: actualizado.nombre,
+      apellido: actualizado.apellido,
+      telefono: actualizado.telefono,
+      email: actualizado.email,
+      estado_cuenta: actualizado.estado_cuenta,
+      bloqueado: actualizado.bloqueado === 1,
+      intentos_fallidos: actualizado.intentos_fallidos,
+      creado_en: actualizado.creado_en,
+      modificado_en: actualizado.modificado_en,
+    },
+  };
+}
+
+module.exports = { registro, login, cerrarSesion, mapearUsuario, desbloquearPorAdmin, recuperarPorEmail, restablecerPorToken };

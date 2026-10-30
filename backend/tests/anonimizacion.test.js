@@ -181,6 +181,39 @@ describe('POST /api/admin/clientes/:id/anonimizar', () => {
     expect(totalAtenciones).toBe(0);
   });
 
+  test('cliente anonimizado no puede iniciar sesión (cuenta inactiva)', async () => {
+    // Después del anonimizado, el documento es ANON-<clienteId> y password_hash es NULL
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ documento: `ANON-${clienteId}`, password: 'clave12' });
+    expect(res.status).toBe(401);
+  });
+
+  test('doble anonimización: error controlado, no 500', async () => {
+    // Crear un cliente separado para este test
+    const hashCli2 = await bcrypt.hash('clave12', 4);
+    const [cli2] = await pool.execute(
+      `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, email, password_hash, estado_cuenta)
+       VALUES ('cliente', ?, 'Test', 'Doble', '1100000000', 'test doble@vetgestion.test', ?, 'con_cuenta')`,
+      ['TEST-DOBLE2', hashCli2]
+    );
+    const cliente2Id = cli2.insertId;
+
+    // Primero anonimiza (debe tener éxito)
+    await request(app)
+      .post(`/api/admin/clientes/${cliente2Id}/anonimizar`)
+      .set('Cookie', cookieAdmin);
+
+    // Segundo intento: debería responder sin 500 (puede ser 200 o 404, pero nunca 500)
+    const res = await request(app)
+      .post(`/api/admin/clientes/${cliente2Id}/anonimizar`)
+      .set('Cookie', cookieAdmin);
+    expect(res.status).not.toBe(500);
+
+    // Limpiar
+    await pool.execute('DELETE FROM usuarios WHERE id = ?', [cliente2Id]);
+  });
+
   test('anónimizar es atómico: fallo intermedio no deja cliente a medias', async () => {
     // Segundo cliente independiente para este test
     const hashCli2 = await bcrypt.hash('clave12', 4);
