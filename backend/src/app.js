@@ -22,6 +22,7 @@ app.use('/api/feriados', require('./modules/feriados/routes').routerPublico);
 app.use('/api/admin/feriados', require('./modules/feriados/routes').routerAdmin);
 app.use('/api/turnos', require('./modules/turnos/routes').routerCliente);
 app.use('/api/admin/turnos', require('./modules/turnos/routes').routerAdmin);
+app.use('/api/admin/atenciones', require('./modules/atenciones/routes'));
 app.use('/api/admin/clientes', require('./modules/clientes/routes').routerAdminClientes);
 app.use('/api/admin/mascotas', require('./modules/clientes/routes').routerAdminMascotas);
 

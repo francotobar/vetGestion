@@ -10,6 +10,8 @@ const {
   cambiarEstadoSchema,
   urgenciaSchema,
 } = require('./schema');
+const { cargarAtencionSchema } = require('../atenciones/schema');
+const controladorAtenciones = require('../atenciones/controller');
 
 // Router de turnos cliente / C/A:
 // Franjas libres del día para reservar (C/A), reserva, consulta, cancelación y
@@ -40,6 +42,7 @@ routerAdmin.patch(
   controlador.reprogramarAdmin
 );
 routerAdmin.post('/:id/urgencia', validar(urgenciaSchema), controlador.urgenciaAdmin);
+routerAdmin.post('/:id/atencion', auth, roles('admin'), validar(cargarAtencionSchema), controladorAtenciones.cargarAtencion);
 
 module.exports = routerCliente;
 module.exports.routerCliente = routerCliente;

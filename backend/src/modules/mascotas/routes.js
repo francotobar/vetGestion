@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const controlador = require('./controller');
+const controladorAtenciones = require('../atenciones/controller');
 const { validar } = require('../../middlewares/validar');
 const { auth } = require('../../middlewares/auth');
 const { roles } = require('../../middlewares/roles');
@@ -10,6 +11,7 @@ const { mascotaSchema } = require('./schema');
 router.get('/', auth, roles('cliente'), controlador.listar);
 router.post('/', auth, roles('cliente'), validar(mascotaSchema), controlador.crear);
 router.get('/:id', auth, roles('cliente'), controlador.obtener);
+router.get('/:id/historial', auth, roles('cliente'), controladorAtenciones.historial);
 router.put('/:id', auth, roles('cliente'), validar(mascotaSchema), controlador.actualizar);
 router.delete('/:id', auth, roles('cliente'), controlador.eliminar);
 
