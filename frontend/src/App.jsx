@@ -11,13 +11,13 @@ import ReservarTurno from './pages/cliente/ReservarTurno.jsx';
 import MisTurnos from './pages/cliente/MisTurnos.jsx';
 import Agenda from './pages/admin/Agenda.jsx';
 import TurnoManual from './pages/admin/TurnoManual.jsx';
+import Clientes from './pages/admin/Clientes.jsx';
+import ClienteAlta from './pages/admin/ClienteAlta.jsx';
+import ClienteFicha from './pages/admin/ClienteFicha.jsx';
 
 // Las rutas P0 de admin restantes (sección 8 del plan) muestran una página
-// provisoria hasta que su tarea (FE-08 en adelante) las implemente.
+// provisoria hasta que su tarea (FE-09 en adelante) las implemente.
 const rutasAdmin = [
-  { path: '/admin/clientes', titulo: 'Clientes' },
-  { path: '/admin/clientes/nuevo', titulo: 'Nuevo cliente' },
-  { path: '/admin/clientes/:id', titulo: 'Ficha del cliente' },
   { path: '/admin/servicios', titulo: 'Servicios' },
   { path: '/admin/feriados', titulo: 'Feriados' },
 ];
@@ -87,6 +87,30 @@ export default function App() {
           element={
             <RutaProtegida roles={['admin']}>
               <TurnoManual />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/admin/clientes"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <Clientes />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/admin/clientes/nuevo"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <ClienteAlta />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/admin/clientes/:id"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <ClienteFicha />
             </RutaProtegida>
           }
         />
