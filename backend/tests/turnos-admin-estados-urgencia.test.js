@@ -361,7 +361,7 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
   });
 
   test('urgencia con acción reprogramar a franja ocupada devuelve 409 FRANJA_OCUPADA', async () => {
-    await insertarTurno({ fechaHora: '2026-11-03 16:30:00', estado: 'pendiente' });
+    await insertarTurno({ fechaHora: '2026-12-14 16:30:00', estado: 'pendiente' });
     const turnoId = await insertarTurno({ fechaHora: '2026-11-02 16:00:00', estado: 'confirmado' });
 
     const res = await request(app)
@@ -370,7 +370,7 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
       .send({
         accion: 'reprogramar',
         motivo: 'Urgencia respiratoria',
-        fecha: '2026-11-03',
+        fecha: '2026-12-14',
         hora: '16:30',
       });
 
