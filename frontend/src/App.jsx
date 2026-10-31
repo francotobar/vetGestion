@@ -14,13 +14,8 @@ import TurnoManual from './pages/admin/TurnoManual.jsx';
 import Clientes from './pages/admin/Clientes.jsx';
 import ClienteAlta from './pages/admin/ClienteAlta.jsx';
 import ClienteFicha from './pages/admin/ClienteFicha.jsx';
-
-// Las rutas P0 de admin restantes (sección 8 del plan) muestran una página
-// provisoria hasta que su tarea (FE-09 en adelante) las implemente.
-const rutasAdmin = [
-  { path: '/admin/servicios', titulo: 'Servicios' },
-  { path: '/admin/feriados', titulo: 'Feriados' },
-];
+import Servicios from './pages/admin/Servicios.jsx';
+import Feriados from './pages/admin/Feriados.jsx';
 
 export default function App() {
   return (
@@ -114,17 +109,22 @@ export default function App() {
             </RutaProtegida>
           }
         />
-        {rutasAdmin.map(({ path, titulo }) => (
-          <Route
-            key={path}
-            path={path}
-            element={
-              <RutaProtegida roles={['admin']}>
-                <PaginaEnConstruccion titulo={titulo} />
-              </RutaProtegida>
-            }
-          />
-        ))}
+        <Route
+          path="/admin/servicios"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <Servicios />
+            </RutaProtegida>
+          }
+        />
+        <Route
+          path="/admin/feriados"
+          element={
+            <RutaProtegida roles={['admin']}>
+              <Feriados />
+            </RutaProtegida>
+          }
+        />
 
         <Route path="*" element={<PaginaEnConstruccion titulo="Página no encontrada" />} />
       </Route>

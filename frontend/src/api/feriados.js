@@ -6,3 +6,13 @@ import api from './cliente.js';
 export function listar() {
   return api.get('/feriados');
 }
+
+// POST /admin/feriados: alta de feriado (fecha: YYYY-MM-DD, motivo: string).
+export function crear(datos) {
+  return api.post('/admin/feriados', datos);
+}
+
+// DELETE /admin/feriados/:fecha: baja de feriado por fecha (YYYY-MM-DD).
+export function eliminar(fecha) {
+  return api.delete(`/admin/feriados/${fecha}`);
+}
