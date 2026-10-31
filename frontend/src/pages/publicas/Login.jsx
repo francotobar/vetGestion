@@ -101,6 +101,10 @@ export default function Login() {
       <p className="aviso">
         ¿No tenés cuenta? <Link to="/registro">Registrate</Link>
       </p>
+
+      <p className="aviso">
+        <Link to="/recuperar">Olvidé mi contraseña</Link>
+      </p>
     </section>
   );
 }

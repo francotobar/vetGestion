@@ -4,6 +4,8 @@ import RutaProtegida from './components/RutaProtegida.jsx';
 import PaginaEnConstruccion from './components/PaginaEnConstruccion.jsx';
 import Login from './pages/publicas/Login.jsx';
 import Registro from './pages/publicas/Registro.jsx';
+import Recuperar from './pages/publicas/Recuperar.jsx';
+import Restablecer from './pages/publicas/Restablecer.jsx';
 import Mascotas from './pages/cliente/Mascotas.jsx';
 import MascotaNueva from './pages/cliente/MascotaNueva.jsx';
 import MascotaFicha from './pages/cliente/MascotaFicha.jsx';
@@ -25,6 +27,8 @@ export default function App() {
         <Route path="/" element={<PaginaEnConstruccion titulo="Inicio" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
+        <Route path="/recuperar" element={<Recuperar />} />
+        <Route path="/restablecer" element={<Restablecer />} />
 
         {/* Cliente */}
         <Route

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { desbloquear, mascotasDelCliente, obtener } from '../../api/adminClientes.js';
+import { desbloquear, anonimizar, mascotasDelCliente, obtener } from '../../api/adminClientes.js';
 import { agenda } from '../../api/adminTurnos.js';
 import { mensajeDeError } from '../../api/cliente.js';
 import Campo from '../../components/Campo.jsx';
@@ -13,6 +13,10 @@ import Modal from '../../components/Modal.jsx';
 // si está bloqueado, el botón Desbloquear (BE-13): limpia los intentos
 // fallidos y permite fijar una contraseña temporal opcional (misma regla que
 // el backend: >= 6 caracteres y >= 2 números).
+//
+// El botón Anonimizar (FE-11, BE-15, RNF04) ejecuta la supresión de datos:
+// pide confirmación en un Modal de peligro porque es irreversible y, al
+// confirmar, recarga la ficha con el estado real del cliente anonimizado.
 //
 // Los turnos se piden con GET /admin/turnos (desde/hasta) porque no existe
 // un endpoint por cliente: se filtra por usuario_id en la pantalla. El rango
@@ -69,9 +73,16 @@ export default function ClienteFicha() {
   const [errorDesbloqueo, setErrorDesbloqueo] = useState('');
   const [desbloqueando, setDesbloqueando] = useState(false);
 
+  // Anonimización (FE-11): confirmación aparte porque es irreversible.
+  const [modalAnonimizar, setModalAnonimizar] = useState(false);
+  const [errorAnonimizar, setErrorAnonimizar] = useState('');
+  const [anonimizando, setAnonimizando] = useState(false);
+
   // Ficha del cliente; si falla (por ejemplo 404) se muestra la página de
   // error. Las mascotas y los turnos se cargan aparte para que un fallo en
-  // ellos no deje afuera el resto de la ficha.
+  // ellos no deje afuera el resto de la ficha. `recarga` permite volver a
+  // pedir todo tras anonimizar (FE-11) sin recargar la página.
+  const [recarga, setRecarga] = useState(0);
   useEffect(() => {
     let vivo = true;
     obtener(id)
@@ -84,7 +95,7 @@ export default function ClienteFicha() {
     return () => {
       vivo = false;
     };
-  }, [id]);
+  }, [id, recarga]);
 
   useEffect(() => {
     let vivo = true;
@@ -98,7 +109,7 @@ export default function ClienteFicha() {
     return () => {
       vivo = false;
     };
-  }, [id]);
+  }, [id, recarga]);
 
   useEffect(() => {
     let vivo = true;
@@ -118,7 +129,44 @@ export default function ClienteFicha() {
     return () => {
       vivo = false;
     };
-  }, [id]);
+  }, [id, recarga]);
+
+  function abrirAnonimizar() {
+    setModalAnonimizar(true);
+    setErrorAnonimizar('');
+  }
+
+  function cerrarAnonimizar() {
+    setModalAnonimizar(false);
+    setErrorAnonimizar('');
+  }
+
+  async function confirmarAnonimizar() {
+    setAnonimizando(true);
+    setErrorAnonimizar('');
+    try {
+      const { data } = await anonimizar(id);
+      setModalAnonimizar(false);
+      setAviso(data.mensaje); // mensaje real del backend
+      // La ficha, las mascotas y los turnos cambian: se vuelve a pedir todo.
+      setErrorMascotas('');
+      setErrorTurnos('');
+      setRecarga((n) => n + 1);
+    } catch (error) {
+      const status = error.response?.status;
+      if (status === 404) {
+        setModalAnonimizar(false);
+        setErrorApi('Ese cliente ya no existe.');
+        setCliente(null);
+      } else if (!error.response) {
+        setErrorAnonimizar('No se pudo conectar con el servidor. Intentá nuevamente.');
+      } else {
+        setErrorAnonimizar(mensajeDeError(error, 'No se pudo anonimizar al cliente. Intentá nuevamente.'));
+      }
+    } finally {
+      setAnonimizando(false);
+    }
+  }
 
   function abrirDesbloqueo() {
     setModalAbierto(true);
@@ -250,6 +298,12 @@ export default function ClienteFicha() {
         </div>
       )}
 
+      <div className="pagina__acciones">
+        <button type="button" className="boton boton--peligro" onClick={abrirAnonimizar}>
+          Anonimizar
+        </button>
+      </div>
+
       <h2>Mascotas</h2>
       {mascotas === null && <p className="aviso">Cargando mascotas…</p>}
       {errorMascotas && (
@@ -317,6 +371,24 @@ export default function ClienteFicha() {
             </ul>
           )}
         </>
+      )}
+
+      {modalAnonimizar && (
+        <Modal
+          titulo="Anonimizar cliente"
+          mensaje="Esta acción NO se puede deshacer: se reemplazan los datos personales del cliente de forma permanente (Ley 25.326), sus mascotas quedan inactivas, se cancelan sus turnos futuros y la cuenta deja de poder iniciar sesión. ¿Confirmás que querés anonimizarlo?"
+          textoConfirmar="Sí, anonimizar"
+          tipo="peligro"
+          onConfirmar={confirmarAnonimizar}
+          onCancelar={cerrarAnonimizar}
+        >
+          {errorAnonimizar && (
+            <p className="error error--caja" role="alert">
+              {errorAnonimizar}
+            </p>
+          )}
+          {anonimizando && <p className="aviso">Anonimizando…</p>}
+        </Modal>
       )}
 
       {modalAbierto && (

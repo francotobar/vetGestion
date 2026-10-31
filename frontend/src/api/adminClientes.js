@@ -5,6 +5,7 @@ import api from './cliente.js';
 //   POST /admin/clientes                 → alta asistida (RF01b, RF24)
 //   GET  /admin/clientes/:id             → ficha del cliente
 //   POST /admin/clientes/:id/desbloquear → desbloquear y contraseña temporal (BE-13)
+//   POST /admin/clientes/:id/anonimizar  → supresión de datos (BE-15, RNF04)
 //   GET  /admin/clientes/:id/mascotas    → mascotas activas del cliente
 //
 // El resto del módulo (PUT editar, POST baja, POST mascotas) no lo consume
@@ -106,6 +107,20 @@ export function desbloquear(id, password) {
     data: {
       mensaje: respuesta.data.mensaje,
       cliente: aCamelCliente(respuesta.data.cliente),
+    },
+  }));
+}
+
+// Anonimización por supresión (POST /admin/clientes/:id/anonimizar, BE-15,
+// RNF04 de la Ley 25.326). Sin cuerpo: reemplaza los datos personales del
+// cliente, deja sus mascotas inactivas, cancela sus turnos futuros y pone la
+// cuenta 'inactiva'. No se puede deshacer. Responde { mensaje, id }.
+export function anonimizar(id) {
+  return api.post(`/admin/clientes/${id}/anonimizar`).then((respuesta) => ({
+    ...respuesta,
+    data: {
+      mensaje: respuesta.data.mensaje,
+      id: respuesta.data.id,
     },
   }));
 }
