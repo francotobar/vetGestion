@@ -185,8 +185,29 @@ describe('POST /api/auth/login y GET /api/auth/me', () => {
   });
 });
 
+// BE-16 (plan, línea 449): el enlace de recuperación NO viaja en la respuesta
+// JSON, se imprime por la consola del servidor (no hay SMTP en el proyecto).
+// Este helper pide la recuperación capturando ese console.log y devuelve el
+// enlace impreso y el token extraído de él, tal como lo recibiría el usuario.
+async function recuperarCapturandoEnlace(email) {
+  const spy = jest.spyOn(console, 'log').mockImplementation(() => {});
+  let enlace = null;
+  let res;
+  try {
+    res = await request(app).post('/api/auth/recuperar').send({ email });
+    for (const llamada of spy.mock.calls) {
+      const texto = llamada.join(' ');
+      if (texto.includes('restablecer?token=')) enlace = texto;
+    }
+  } finally {
+    spy.mockRestore();
+  }
+  const token = enlace ? (enlace.match(/restablecer\?token=([0-9a-f]{64})/) || [])[1] : null;
+  return { res, enlace, token };
+}
+
 describe('POST /api/auth/recuperar y POST /api/auth/restablecer (BE-16)', () => {
-  test('recuperar con email existente genera token y devuelve 200', async () => {
+  test('recuperar con email existente imprime el enlace por consola y no devuelve el token', async () => {
     await request(app).post('/api/auth/registro').send({
       documento: DOC_RECUPERAR,
       nombre: 'Test',
@@ -197,11 +218,16 @@ describe('POST /api/auth/recuperar y POST /api/auth/restablecer (BE-16)', () => 
       consentimiento: true,
     });
 
-    const res = await request(app).post('/api/auth/recuperar').send({ email: 'test_recup@example.com' });
+    const { res, enlace, token } = await recuperarCapturandoEnlace('test_recup@example.com');
     expect(res.status).toBe(200);
     expect(res.body.mensaje).toContain('Si el email existe, se ha enviado un enlace');
-    expect(res.body.token).toBeDefined();
-    expect(res.body.expira).toBeDefined();
+    // El token nunca se expone en la respuesta...
+    expect(res.body).not.toHaveProperty('token');
+    expect(res.body).not.toHaveProperty('expira');
+    // ...solo en el enlace impreso por consola, con el formato del plan
+    expect(enlace).toContain('test_recup@example.com');
+    expect(enlace).toContain('/restablecer?token=');
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
   });
 
   test('recuperar sin email en el cuerpo -> 400', async () => {
@@ -209,18 +235,20 @@ describe('POST /api/auth/recuperar y POST /api/auth/restablecer (BE-16)', () => 
     expect(res.status).toBe(400);
   });
 
-  test('recuperar email inexistente -> misma estructura que el que existe', async () => {
-    const res = await request(app).post('/api/auth/recuperar').send({ email: 'inexistente@ejemplo.com' });
+  test('recuperar email inexistente -> misma estructura y sin enlace impreso', async () => {
+    const { res, enlace, token } = await recuperarCapturandoEnlace('inexistente@ejemplo.com');
     expect(res.status).toBe(200);
+    expect(res.body).toEqual({ mensaje: expect.any(String) });
     expect(res.body.mensaje).toContain('Si el email existe, se ha enviado un enlace');
-    expect(res.body.token).toBeDefined();
+    // No hay destinatario: no se imprime ningún enlace
+    expect(enlace).toBeNull();
+    expect(token).toBeNull();
   });
 
   test('restablecer con token valido y contrasena correcta -> 200', async () => {
-    // Primero recuperar para generar token asociado al usuario
-    await request(app).post('/api/auth/recuperar').send({ email: 'test_recup@example.com' });
-
-    const { token } = (await request(app).post('/api/auth/recuperar').send({ email: 'test_recup@example.com' })).body;
+    // El token sale del enlace impreso por consola (ver helper)
+    const { token } = await recuperarCapturandoEnlace('test_recup@example.com');
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
 
     const res = await request(app).post('/api/auth/restablecer').send({ token, password: 'NuevaClave12!' });
     expect(res.status).toBe(200);
@@ -228,12 +256,11 @@ describe('POST /api/auth/recuperar y POST /api/auth/restablecer (BE-16)', () => 
     expect(res.body.cliente.estado_cuenta).toBe('con_cuenta');
     expect(res.body.cliente.bloqueado).toBe(false);
   });
-test('restablecer con token vencido -> 400', async () => {
-    // Primero recuperar para generar token asociado al usuario
-    await request(app).post('/api/auth/recuperar').send({ email: 'test_recup@example.com' });
 
-    // Obtener el token
-    const { token } = (await request(app).post('/api/auth/recuperar').send({ email: 'test_recup@example.com' })).body;
+  test('restablecer con token vencido -> 400', async () => {
+    // Generar el token asociado al usuario (sale de la consola)
+    const { token } = await recuperarCapturandoEnlace('test_recup@example.com');
+    expect(token).toMatch(/^[0-9a-f]{64}$/);
 
     // Obtener el ID del usuario
     const [[user]] = await pool.execute(
@@ -250,6 +277,22 @@ test('restablecer con token vencido -> 400', async () => {
     const res = await request(app).post('/api/auth/restablecer').send({ token, password: 'clave12' });
     expect(res.status).toBe(400);
     expect(res.body.codigo).toBe('TOKEN_VENCIDO');
+  });
+
+  test('pedir la recuperacion de nuevo invalida el token anterior', async () => {
+    const primera = await recuperarCapturandoEnlace('test_recup@example.com');
+    expect(primera.token).toMatch(/^[0-9a-f]{64}$/);
+
+    // Un segundo pedido renueva el token: solo queda activo el último
+    const segunda = await recuperarCapturandoEnlace('test_recup@example.com');
+    expect(segunda.token).toMatch(/^[0-9a-f]{64}$/);
+    expect(segunda.token).not.toBe(primera.token);
+
+    const res = await request(app)
+      .post('/api/auth/restablecer')
+      .send({ token: primera.token, password: 'clave12' });
+    expect(res.status).toBe(400);
+    expect(res.body.codigo).toBe('TOKEN_INVALIDO');
   });
 
   test('restablecer con token invalido -> 400', async () => {

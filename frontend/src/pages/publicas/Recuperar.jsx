@@ -10,8 +10,8 @@ const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Pantalla pública de recuperación de contraseña (RF02, BE-16). El backend
 // responde siempre igual, exista o no el email con esa cuenta: la pantalla
 // muestra solo el mensaje del backend y nunca revela si el email existe.
-// El enlace de restablecimiento lo simula el backend (sin SMTP) devolviendo
-// el token en la respuesta; el mail se supone enviado igual.
+// El enlace de restablecimiento lo simula el backend (sin SMTP) imprimiéndolo
+// por la consola del servidor; el token nunca llega al cliente (BE-16).
 export default function Recuperar() {
   const { usuario } = useAuth();
   const [email, setEmail] = useState('');

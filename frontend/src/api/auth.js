@@ -8,9 +8,10 @@ import api from './cliente.js';
 //   POST /auth/logout    (C/A)     → borra la cookie
 //   GET  /auth/me        (C/A)     → usuario de la sesión vigente
 //   POST /auth/recuperar (pública) → pide el enlace de recuperación por
-//                                    email; responde siempre la misma
-//                                    estructura { mensaje, token, expira }
-//                                    exista o no el email (BE-16)
+//                                    email; responde siempre { mensaje }
+//                                    exista o no el email. El enlace se
+//                                    imprime en la consola del backend,
+//                                    nunca viaja en la respuesta (BE-16)
 //   POST /auth/restablecer (pública) → { token, password } → { mensaje,
 //                                    cliente }; 400 TOKEN_INVALIDO o
 //                                    TOKEN_VENCIDO si el enlace ya no sirve

@@ -1,4 +1,5 @@
 const servicio = require('./service');
+const { env } = require('../../config/env');
 
 async function registro(req, res, next) {
   try {
@@ -34,17 +35,18 @@ function me(req, res) {
 async function recuperar(req, res, next) {
   try {
     const resultado = await servicio.recuperarPorEmail(req.body.email);
-    const base = { mensaje: 'Si el email existe, se ha enviado un enlace de recuperación. Revisa la consola.' };
+    // BE-16 (plan, sección 7): sin SMTP, el "envío" del enlace se simula
+    // imprimiéndolo por la consola del servidor. Solo se imprime si el email
+    // corresponde a una cuenta existente (para el resto no hay destinatario).
     if (resultado.usuario) {
-      base.token = resultado.token;
-      base.expira = resultado.expira;
-    } else {
-      // Cuando el email no existe, aun así devolvemos token para que la
-      // respuesta sea idéntica estructura aunque el token no sea usable.
-      base.token = resultado.token;
-      base.expira = resultado.expira;
+      const enlace = `${env.FRONTEND_URL}/restablecer?token=${resultado.token}`;
+      console.log(
+        `[Recuperación de contraseña] Enlace para ${resultado.usuario.email}: ${enlace} (vence ${resultado.expira})`
+      );
     }
-    res.json(base);
+    // Responde siempre lo mismo exista o no el email, y sin token en el
+    // cuerpo: el enlace solo viaja por consola (plan, BE-16).
+    res.json({ mensaje: 'Si el email existe, se ha enviado un enlace de recuperación. Revisa la consola.' });
   } catch (err) {
     next(err);
   }

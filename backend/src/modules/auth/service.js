@@ -11,6 +11,18 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
+// Fecha y hora local como 'YYYY-MM-DD HH:mm:ss', el formato exacto en que
+// dateStrings: true (config/db.js) devuelve los DATETIME del backend.
+// Comparar texto contra texto en este formato es comparar cronológicamente
+// (las columnas se guardan como DATETIME locales sin zona, regla 8 del plan):
+// comparar ese texto contra un objeto Date daría NaN y siempre false, lo que
+// dejaba sin efecto el vencimiento de 1 hora de los tokens de recuperación.
+function fechaLocalTexto(momento) {
+  const d = momento || new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 // Sesión: JWT de 8 h en cookie httpOnly SameSite=Lax (sección 2 del plan).
 // Decisión: el nombre de la cookie es "token" (el plan no lo fija).
 const COOKIE_SESION = 'token';
@@ -210,45 +222,49 @@ async function recuperarPorEmail(email) {
     [email]
   );
 
-  const ahora = new Date();
+  // Vencimiento: 1 hora. Como dateStrings (config/db.js) devuelve los
+  // DATETIME como texto local, la comparación y el guardado usan ese mismo
+  // formato ('YYYY-MM-DD HH:mm:ss') para que el vencimiento se respete.
+  const ahoraTexto = fechaLocalTexto();
+  const expiraTexto = fechaLocalTexto(new Date(Date.now() + 60 * 60 * 1000));
 
-  if (usuario && usuario.reset_token_hash && usuario.reset_expira && usuario.reset_expira > ahora) {
-    // Token ya existente y vigente: renovarlo
+  if (usuario && usuario.reset_token_hash && usuario.reset_expira && usuario.reset_expira > ahoraTexto) {
+    // Token ya existente y vigente: renovarlo (queda activo solo el último)
     const tokenAleatorio = crypto.randomBytes(32).toString('hex');
     const hashNuevo = hashToken(tokenAleatorio);
-    const expira = new Date(ahora.getTime() + 60 * 60 * 1000); // 1 hora
 
     await pool.execute(
       `UPDATE usuarios SET reset_token_hash = ?, reset_expira = ? WHERE id = ?`,
-      [hashNuevo, expira, usuario.id]
+      [hashNuevo, expiraTexto, usuario.id]
     );
-    return { token: tokenAleatorio, expira, renovado: true, usuario: { id: usuario.id, email: usuario.email } };
+    return { token: tokenAleatorio, expira: expiraTexto, renovado: true, usuario: { id: usuario.id, email: usuario.email } };
   }
 
   if (!usuario) {
     // Email no registrado: generamos un token igualmente para no filtrar información
     // sobre qué emails están registrados, pero sin asociarlo a un usuario real
     const tokenAleatorio = crypto.randomBytes(32).toString('hex');
-    const expira = new Date(ahora.getTime() + 60 * 60 * 1000); // 1 hora
-    return { token: tokenAleatorio, expira, nuevo: true, usuario: null };
+    return { token: tokenAleatorio, expira: expiraTexto, nuevo: true, usuario: null };
   }
 
   // Usuario existe pero sin token previo: crear uno nuevo
   const tokenAleatorio = crypto.randomBytes(32).toString('hex');
   const hash = hashToken(tokenAleatorio);
-  const expira = new Date(ahora.getTime() + 60 * 60 * 1000); // 1 hora
 
   await pool.execute(
     `UPDATE usuarios SET reset_token_hash = ?, reset_expira = ? WHERE id = ?`,
-    [hash, expira, usuario.id]
+    [hash, expiraTexto, usuario.id]
   );
-  return { token: tokenAleatorio, expira, renovado: false, usuario: { id: usuario.id, email: usuario.email } };
+  return { token: tokenAleatorio, expira: expiraTexto, renovado: false, usuario: { id: usuario.id, email: usuario.email } };
 }
 
 // RESTABLECER Contraseña por token (BE-16, P1)
 async function restablecerPorToken({ token, password }) {
   const hashSolicitado = hashToken(token);
-  const ahora = new Date();
+  // Igual que en recuperarPorEmail: reset_expira llega como texto local
+  // (dateStrings), se compara texto contra texto. Un token sin vencimiento
+  // registrado se trata como vencido (no debería existir: se guardan juntos).
+  const ahoraTexto = fechaLocalTexto();
 
   // Buscar usuario por hash de token y verificar que no haya expirado
   const [[usuario]] = await pool.execute(
@@ -262,7 +278,7 @@ async function restablecerPorToken({ token, password }) {
     throw new ApiError(400, 'TOKEN_INVALIDO', 'Token inválido o expirado');
   }
 
-  if (usuario.reset_expira < ahora) {
+  if (!usuario.reset_expira || usuario.reset_expira < ahoraTexto) {
     // Token vencido: limpiar y lanzar error
     await pool.execute(`UPDATE usuarios SET reset_token_hash = NULL, reset_expira = NULL WHERE id = ?`, [usuario.id]);
     throw new ApiError(400, 'TOKEN_VENCIDO', 'Token vencido');
