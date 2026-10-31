@@ -609,3 +609,379 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Pantalla de inicio pública (ruta /) --- */
+/* Paleta propia de la landing: celestes suaves y azul intenso. */
+.inicio-pagina {
+  --inicio-azul: #1d4ed8;
+  --inicio-azul-acento: #0284c7;
+  --inicio-celeste: #e0f2fe;
+  --inicio-celeste-suave: #f0f9ff;
+  --inicio-celeste-medio: #bae6fd;
+  --inicio-borde: #dbeafe;
+  --inicio-texto: #0f172a;
+  --inicio-texto-suave: #475569;
+  display: grid;
+  gap: 3rem;
+  color: var(--inicio-texto);
+}
+
+/* Banner principal: texto a un lado, ilustración al otro (en móvil, apilados) */
+.inicio-hero {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+  padding: 2.5rem 1.5rem;
+  border: 1px solid var(--inicio-borde);
+  border-radius: 1.25rem;
+  background: linear-gradient(135deg, #ffffff 0%, var(--inicio-celeste-suave) 45%, var(--inicio-celeste) 100%);
+}
+
+.inicio-hero__texto h1 {
+  margin: 0.75rem 0 1rem;
+  font-size: clamp(1.9rem, 4.5vw, 2.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--inicio-texto);
+}
+
+.inicio-hero__descripcion {
+  margin: 0;
+  max-width: 48ch;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--inicio-texto-suave);
+}
+
+.inicio-hero__ilustracion {
+  width: min(100%, 360px);
+  margin: 0 auto;
+}
+
+.inicio-ilustracion {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.inicio-etiqueta {
+  display: inline-block;
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--inicio-borde);
+  border-radius: 999px;
+  background: #fff;
+  color: #0369a1;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.inicio-etiqueta--alerta {
+  border-color: #fde68a;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.inicio-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  min-height: 2.75rem;
+}
+
+.inicio-boton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Secciones */
+.inicio-seccion {
+  display: grid;
+  gap: 1.5rem;
+  scroll-margin-top: 1rem;
+}
+
+.inicio-seccion__cabecera {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.inicio-seccion__cabecera h2 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+  letter-spacing: -0.01em;
+  color: var(--inicio-texto);
+}
+
+.inicio-seccion__texto {
+  margin: 0;
+  color: var(--inicio-texto-suave);
+}
+
+.inicio-icono {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Cómo funciona: pasos con número, ícono y conector entre pasos en escritorio */
+.inicio-pasos {
+  position: relative;
+  display: grid;
+  gap: 2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.inicio-paso {
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  text-align: center;
+}
+
+.inicio-paso__numero {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  color: var(--inicio-azul-acento);
+}
+
+.inicio-paso__icono {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 999px;
+  background: var(--inicio-azul);
+  color: #fff;
+  box-shadow: 0 0 0 6px var(--inicio-celeste);
+}
+
+.inicio-paso__icono .inicio-icono {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+
+.inicio-paso h3 {
+  margin: 1.25rem 0 0.4rem;
+  font-size: 1.15rem;
+  color: var(--inicio-texto);
+}
+
+.inicio-paso p {
+  margin: 0;
+  max-width: 30ch;
+  color: var(--inicio-texto-suave);
+}
+
+/* Servicios: tarjetas con ícono propio y efecto hover sutil */
+.inicio-servicios {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.inicio-servicio {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--inicio-borde);
+  border-radius: 1rem;
+  background: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.inicio-servicio:hover {
+  transform: translateY(-2px);
+  border-color: var(--inicio-celeste-medio);
+  box-shadow: 0 10px 24px -12px rgba(2, 132, 199, 0.35);
+}
+
+.inicio-servicio__icono,
+.inicio-contacto__icono {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.75rem;
+  background: var(--inicio-celeste);
+  color: var(--inicio-azul);
+}
+
+.inicio-servicio__nombre {
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--inicio-texto);
+}
+
+/* Horarios: bloque destacado con día y horario grandes */
+.inicio-horario {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 1.75rem;
+  border: 1px solid var(--inicio-borde);
+  border-radius: 1.25rem;
+  background: #fff;
+}
+
+.inicio-horario__icono {
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 999px;
+  background: var(--inicio-azul);
+  color: #fff;
+}
+
+.inicio-horario__icono .inicio-icono {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.inicio-horario__dias {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0369a1;
+}
+
+.inicio-horario__hora {
+  margin: 0.15rem 0;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--inicio-texto);
+}
+
+.inicio-horario__detalle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--inicio-texto-suave);
+}
+
+.inicio-horario__cerrado {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.75rem;
+  background: var(--inicio-celeste-suave);
+  color: var(--inicio-texto-suave);
+  font-size: 0.95rem;
+}
+
+.inicio-horario__cerrado .inicio-icono {
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #64748b;
+}
+
+/* Contacto: datos provisorios, con íconos simples */
+.inicio-contacto {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.inicio-contacto li {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--inicio-borde);
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.inicio-contacto__rotulo {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--inicio-texto-suave);
+}
+
+.inicio-contacto__dato {
+  margin: 0;
+  font-weight: 600;
+  color: var(--inicio-texto);
+}
+
+/* Foco visible en todo elemento interactivo de la pantalla */
+.inicio-pagina :focus-visible {
+  outline: 3px solid var(--inicio-azul);
+  outline-offset: 3px;
+  border-radius: 0.5rem;
+}
+
+@media (min-width: 760px) {
+  .inicio-pagina {
+    gap: 4rem;
+  }
+
+  .inicio-hero {
+    grid-template-columns: 1.05fr 0.95fr;
+    padding: 3.5rem 3rem;
+  }
+
+  .inicio-pasos {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  /* Línea que une los íconos de los pasos (queda detrás de los círculos) */
+  .inicio-pasos::before {
+    content: '';
+    position: absolute;
+    top: 5.25rem;
+    left: 16.7%;
+    right: 16.7%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--inicio-celeste-medio), var(--inicio-azul));
+  }
+
+  .inicio-horario {
+    padding: 2rem 2.5rem;
+  }
+}
+
+@media (min-width: 1000px) {
+  .inicio-horario {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .inicio-horario__cerrado {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inicio-servicio {
+    transition: none;
+  }
+
+  .inicio-servicio:hover {
+    transform: none;
+  }
+}

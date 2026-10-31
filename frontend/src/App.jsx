@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import RutaProtegida from './components/RutaProtegida.jsx';
 import PaginaEnConstruccion from './components/PaginaEnConstruccion.jsx';
+import Inicio from './pages/publicas/Inicio.jsx';
 import Login from './pages/publicas/Login.jsx';
 import Registro from './pages/publicas/Registro.jsx';
 import Recuperar from './pages/publicas/Recuperar.jsx';
@@ -24,7 +25,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         {/* Públicas */}
-        <Route path="/" element={<PaginaEnConstruccion titulo="Inicio" />} />
+        <Route path="/" element={<Inicio />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/recuperar" element={<Recuperar />} />
