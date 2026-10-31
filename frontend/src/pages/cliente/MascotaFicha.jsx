@@ -2,13 +2,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { actualizar, darDeBaja, listar } from '../../api/mascotas.js';
+import { historialCliente } from '../../api/atenciones.js';
 import { mensajeDeError } from '../../api/cliente.js';
+import DetalleAtencion from '../../components/DetalleAtencion.jsx';
 import FormMascota from '../../components/FormMascota.jsx';
 import Modal from '../../components/Modal.jsx';
 
 // Ficha de la mascota (/mascotas/:id): datos completos (RF06), edición
 // y baja lógica con confirmación. La mascota se busca dentro de
 // GET /mascotas (no hay GET /mascotas/:id en el contrato de la sección 6).
+// FE-10: debajo se muestra el historial clínico (GET /mascotas/:id/historial),
+// de solo lectura, en orden cronológico inverso con las notas aclaratorias.
 export default function MascotaFicha() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -18,6 +22,28 @@ export default function MascotaFicha() {
   const [editando, setEditando] = useState(false);
   const [confirmandoBaja, setConfirmandoBaja] = useState(false);
   const [bajando, setBajando] = useState(false);
+  // Historial clínico: null = cargando, [] = sin atenciones, 'error' = fallo.
+  const [historial, setHistorial] = useState(null);
+
+  // El historial se pide recién cuando la mascota aparece en la lista: si no
+  // está (mascota ajena o dada de baja) el endpoint respondería 404 y la
+  // ficha ya muestra su propio mensaje de "no encontramos esa mascota".
+  const mascotaOk = Boolean(mascota) && mascota !== 'no-encontrada';
+  useEffect(() => {
+    if (!mascotaOk) return undefined;
+    let vivo = true;
+    historialCliente(id)
+      .then(({ data }) => vivo && setHistorial(data))
+      .catch((error) => {
+        if (!vivo) return;
+        setHistorial('error');
+        setErrorApi(mensajeDeError(error, 'No se pudo cargar el historial clínico.'));
+      });
+    return () => {
+      vivo = false;
+    };
+    // mascotaOk (y no el objeto mascota) para no repetir el pedido al editar.
+  }, [id, mascotaOk]);
 
   const cargar = useCallback(() => {
     listar()
@@ -196,6 +222,31 @@ export default function MascotaFicha() {
           <dd>{mascota.alergiasCondiciones || 'Sin registrar'}</dd>
         </div>
       </dl>
+
+      <h2>Historial clínico</h2>
+      {historial === null && <p className="aviso">Cargando historial…</p>}
+      {historial === 'error' && (
+        <p className="error error--caja" role="alert">
+          No se pudo cargar el historial clínico. Intentá nuevamente.
+        </p>
+      )}
+      {Array.isArray(historial) && historial.length === 0 && (
+        <div className="estado-vacio">
+          <p>Sin atenciones</p>
+        </div>
+      )}
+      {Array.isArray(historial) && historial.length > 0 && (
+        // El backend devuelve las atenciones en orden cronológico inverso.
+        <ul className="tarjetas">
+          {historial.map((atencion) => (
+            <li key={atencion.id}>
+              <div className="tarjeta">
+                <DetalleAtencion atencion={atencion} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {confirmandoBaja && (
         <Modal

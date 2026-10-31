@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
@@ -7,8 +7,10 @@ import {
   reprogramar as reprogramarTurno,
   urgencia,
 } from '../../api/adminTurnos.js';
+import { agregarNota, cargarAtencion, historialAdmin } from '../../api/atenciones.js';
 import { mensajeDeError } from '../../api/cliente.js';
 import Campo from '../../components/Campo.jsx';
+import DetalleAtencion from '../../components/DetalleAtencion.jsx';
 import EstadoBadge from '../../components/EstadoBadge.jsx';
 import Modal from '../../components/Modal.jsx';
 import SelectorFranja from '../../components/SelectorFranja.jsx';
@@ -35,6 +37,17 @@ const ACCIONES = {
 
 const CANALES = { web: 'Web', telefonico: 'Telefónico', presencial: 'Presencial' };
 const DIAS_CORTOS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+// Etiquetas de los campos de texto de la atención (FE-10, todos opcionales
+// salvo el profesional: cargarAtencionSchema del backend).
+const ETIQUETAS_ATENCION = {
+  anamnesis: 'Anamnesis',
+  diagnostico: 'Diagnóstico',
+  tratamiento: 'Tratamiento',
+  medicacion: 'Medicación',
+  vacunas: 'Vacunas',
+  observaciones: 'Observaciones',
+};
 
 // Las 20 franjas de atención (09:00–18:30 cada 30 min), mismos defaults que
 // utils/fechas.js del backend (HORA_INICIO/HORA_FIN/SLOT_MINUTOS del .env).
@@ -81,8 +94,48 @@ export default function Agenda() {
   const [recargaFranjas, setRecargaFranjas] = useState(0);
   const [errorAccion, setErrorAccion] = useState('');
   const [guardando, setGuardando] = useState(false);
+  // Formulario de atención (FE-10): profesional obligatorio, el resto opcional.
+  const [formAtencion, setFormAtencion] = useState({
+    profesionalNombre: '',
+    anamnesis: '',
+    diagnostico: '',
+    tratamiento: '',
+    medicacion: '',
+    vacunas: '',
+    observaciones: '',
+  });
+  // Texto de la nota aclaratoria que se agrega bajo una atención.
+  const [notaTexto, setNotaTexto] = useState('');
   // Contacto del cliente tras una urgencia (respuesta del backend, RF25).
   const [contacto, setContacto] = useState(null);
+
+  // Historiales por mascota (FE-10): la agenda no informa qué turnos
+  // atendidos ya tienen atención, así que se pide el historial de cada
+  // mascota con turnos atendidos. { [mascotaId]: { estado, atenciones } }.
+  const [historiales, setHistoriales] = useState({});
+  // Mascotas cuyo historial ya se pidió: evita repetir el GET al navegar
+  // por días o semanas.
+  const historialesPedidos = useRef(new Set());
+
+  const pedirHistoriales = useCallback((turnosActuales) => {
+    const mascotas = [
+      ...new Set(turnosActuales.filter((t) => t.estado === 'atendido').map((t) => t.mascotaId)),
+    ];
+    mascotas
+      .filter((mascotaId) => !historialesPedidos.current.has(mascotaId))
+      .forEach((mascotaId) => {
+        historialesPedidos.current.add(mascotaId);
+        historialAdmin(mascotaId)
+          .then(({ data }) => {
+            setHistoriales((prev) => ({ ...prev, [mascotaId]: { estado: 'ok', atenciones: data } }));
+          })
+          .catch(() => {
+            // Si el historial no se pudo cargar no se ofrece registrar una
+            // atención: el backend igual la rechazaría con 409 si ya existe.
+            setHistoriales((prev) => ({ ...prev, [mascotaId]: { estado: 'error', atenciones: [] } }));
+          });
+      });
+  }, []);
 
   // Inicio y fin de la semana que contiene "fecha" (lunes a domingo).
   // Se memoizan para que cambiar un estado ajeno no recree estos objetos:
@@ -103,12 +156,13 @@ export default function Agenda() {
       .then(({ data }) => {
         setTurnos(data);
         setErrorApi('');
+        pedirHistoriales(data);
       })
       .catch((error) => {
         setTurnos([]);
         setErrorApi(mensajeDeError(error, 'No pudimos cargar la agenda. Intentá nuevamente.'));
       });
-  }, [vista, fecha]);
+  }, [vista, fecha, pedirHistoriales]);
 
   useEffect(() => {
     setTurnos(null);
@@ -142,6 +196,138 @@ export default function Agenda() {
   function cerrarAccion() {
     setAccion(null);
     setErrorAccion('');
+  }
+
+  // FE-10: atención del turno, si existe. undefined = el historial todavía no
+  // se cargó (o falló) y no se ofrece ninguna acción; null = sin atención.
+  function atencionDe(turno) {
+    const entrada = historiales[turno.mascotaId];
+    if (!entrada || entrada.estado !== 'ok') return undefined;
+    return entrada.atenciones.find((atencion) => atencion.turnoId === turno.id) || null;
+  }
+
+  function abrirAtencion(turno) {
+    setAccion({ tipo: 'atencion', turno });
+    setFormAtencion({
+      profesionalNombre: '',
+      anamnesis: '',
+      diagnostico: '',
+      tratamiento: '',
+      medicacion: '',
+      vacunas: '',
+      observaciones: '',
+    });
+    setErrorAccion('');
+    setAviso('');
+  }
+
+  function abrirNotas(turno, atencion) {
+    setAccion({ tipo: 'notas', turno, atencion });
+    setNotaTexto('');
+    setErrorAccion('');
+    setAviso('');
+  }
+
+  // Después de guardar una atención o una nota, el historial de esa mascota
+  // se vuelve a pedir en la próxima carga de la agenda.
+  function invalidarHistorial(mascotaId) {
+    historialesPedidos.current.delete(mascotaId);
+    setHistoriales((prev) => {
+      const copia = { ...prev };
+      delete copia[mascotaId];
+      return copia;
+    });
+  }
+
+  async function confirmarAtencion() {
+    const { turno } = accion;
+    if (!formAtencion.profesionalNombre.trim()) {
+      setErrorAccion('El nombre del profesional es obligatorio.');
+      return;
+    }
+    setGuardando(true);
+    setErrorAccion('');
+    try {
+      await cargarAtencion(turno.id, {
+        profesionalNombre: formAtencion.profesionalNombre.trim(),
+        anamnesis: formAtencion.anamnesis.trim(),
+        diagnostico: formAtencion.diagnostico.trim(),
+        tratamiento: formAtencion.tratamiento.trim(),
+        medicacion: formAtencion.medicacion.trim(),
+        vacunas: formAtencion.vacunas.trim(),
+        observaciones: formAtencion.observaciones.trim(),
+      });
+      // La atención es inmutable: no se puede editar ni borrar luego (RF26).
+      setAviso('Atención registrada en el historial de la mascota.');
+      cerrarAccion();
+      invalidarHistorial(turno.mascotaId);
+      cargar();
+    } catch (error) {
+      const status = error.response?.status;
+      if (status === 404 || status === 422 || status === 409) {
+        // 404: el turno ya no existe; 422 TURNO_NO_ATENDIDO: cambió de estado;
+        // 409 ATENCION_YA_EXISTE: otro admin ya la cargó. En los tres casos se
+        // muestra el motivo real y se recarga (el botón desaparece solo).
+        cerrarAccion();
+        setErrorApi(mensajeDeError(error, 'No se pudo registrar la atención.'));
+        invalidarHistorial(turno.mascotaId);
+        cargar();
+      } else if (!error.response) {
+        setErrorAccion('No se pudo conectar con el servidor. Intentá nuevamente.');
+      } else {
+        setErrorAccion(mensajeDeError(error, 'No se pudo registrar la atención. Intentá nuevamente.'));
+      }
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function confirmarNota() {
+    // El historial no incluye mascota_id (SELECT de obtenerHistorial): el
+    // id de la mascota sale del turno de la agenda, que sí lo trae.
+    const { atencion, turno } = accion;
+    const texto = notaTexto.trim();
+    if (!texto) {
+      setErrorAccion('El texto de la nota es obligatorio.');
+      return;
+    }
+    setGuardando(true);
+    setErrorAccion('');
+    try {
+      const { data } = await agregarNota(atencion.id, texto);
+      // La nota se agrega debajo sin tocar la atención original (RF27).
+      setHistoriales((prev) => {
+        const entrada = prev[turno.mascotaId];
+        if (!entrada) return prev;
+        return {
+          ...prev,
+          [turno.mascotaId]: {
+            ...entrada,
+            atenciones: entrada.atenciones.map((a) =>
+              a.id === atencion.id ? { ...a, notas: [...a.notas, data] } : a
+            ),
+          },
+        };
+      });
+      setAccion((a) =>
+        a ? { ...a, atencion: { ...a.atencion, notas: [...a.atencion.notas, data] } } : a
+      );
+      setNotaTexto('');
+      setAviso('Nota aclaratoria agregada.');
+    } catch (error) {
+      if (error.response?.status === 404) {
+        cerrarAccion();
+        setErrorApi('Esa atención ya no existe.');
+        invalidarHistorial(turno.mascotaId);
+        cargar();
+      } else if (!error.response) {
+        setErrorAccion('No se pudo conectar con el servidor. Intentá nuevamente.');
+      } else {
+        setErrorAccion(mensajeDeError(error, 'No se pudo agregar la nota. Intentá nuevamente.'));
+      }
+    } finally {
+      setGuardando(false);
+    }
   }
 
   async function confirmarEstado() {
@@ -343,9 +529,12 @@ export default function Agenda() {
                 {turno ? (
                   <TarjetaTurno
                     turno={turno}
+                    atencion={atencionDe(turno)}
                     onEstado={abrirEstado}
                     onReprogramar={abrirReprogramacion}
                     onUrgencia={abrirUrgencia}
+                    onRegistrarAtencion={abrirAtencion}
+                    onVerNotas={abrirNotas}
                   />
                 ) : (
                   <span className="agenda__libre">
@@ -379,10 +568,13 @@ export default function Agenda() {
                       <li key={turno.id}>
                         <TarjetaTurno
                           turno={turno}
+                          atencion={atencionDe(turno)}
                           mostrarHora
                           onEstado={abrirEstado}
                           onReprogramar={abrirReprogramacion}
                           onUrgencia={abrirUrgencia}
+                          onRegistrarAtencion={abrirAtencion}
+                          onVerNotas={abrirNotas}
                         />
                       </li>
                     ))}
@@ -493,6 +685,76 @@ export default function Agenda() {
         </Modal>
       )}
 
+      {accion?.tipo === 'atencion' && (
+        <Modal
+          titulo="Registrar atención"
+          mensaje={`${turnoAccion.clienteNombre} ${turnoAccion.clienteApellido} · ${turnoAccion.mascotaNombre} — ${dayjs(turnoAccion.fechaHora).format('DD/MM/YYYY [de] HH:mm[h]')}. Una vez guardada no se puede editar ni borrar: las atenciones son inmutables.`}
+          textoConfirmar="Guardar atención"
+          tipo="normal"
+          onConfirmar={confirmarAtencion}
+          onCancelar={cerrarAccion}
+        >
+          <Campo
+            id="profesionalAtencion"
+            etiqueta="Nombre del profesional"
+            valor={formAtencion.profesionalNombre}
+            onChange={(v) => {
+              setFormAtencion((f) => ({ ...f, profesionalNombre: v }));
+              if (v.trim()) setErrorAccion('');
+            }}
+            obligatorio
+          />
+          {['anamnesis', 'diagnostico', 'tratamiento', 'medicacion', 'vacunas', 'observaciones'].map(
+            (campo) => (
+              <Campo
+                key={campo}
+                id={campo}
+                etiqueta={ETIQUETAS_ATENCION[campo]}
+                tipo="textarea"
+                valor={formAtencion[campo]}
+                onChange={(v) => setFormAtencion((f) => ({ ...f, [campo]: v }))}
+              />
+            )
+          )}
+          {errorAccion && (
+            <p className="error error--caja" role="alert">
+              {errorAccion}
+            </p>
+          )}
+          {guardando && <p className="aviso">Guardando…</p>}
+        </Modal>
+      )}
+
+      {accion?.tipo === 'notas' && (
+        <Modal
+          titulo="Notas aclaratorias"
+          mensaje={`Atención de ${turnoAccion.mascotaNombre} del ${dayjs(turnoAccion.fechaHora).format('DD/MM/YYYY')}. El texto original es inmutable: las notas se agregan debajo (RF27).`}
+          textoConfirmar="Agregar nota"
+          tipo="normal"
+          onConfirmar={confirmarNota}
+          onCancelar={cerrarAccion}
+        >
+          <DetalleAtencion atencion={accion.atencion} />
+          <Campo
+            id="notaAtencion"
+            etiqueta="Nueva nota aclaratoria"
+            tipo="textarea"
+            valor={notaTexto}
+            onChange={(v) => {
+              setNotaTexto(v);
+              if (v.trim()) setErrorAccion('');
+            }}
+            obligatorio
+          />
+          {errorAccion && (
+            <p className="error error--caja" role="alert">
+              {errorAccion}
+            </p>
+          )}
+          {guardando && <p className="aviso">Guardando…</p>}
+        </Modal>
+      )}
+
       {contacto && (
         <Modal
           titulo="Contacto del cliente avisado"
@@ -511,9 +773,23 @@ export default function Agenda() {
 
 // Tarjeta de turno de la agenda: cliente, mascota, servicio, canal, estado
 // y solo las acciones válidas para su estado (mapa de la sección 5).
-function TarjetaTurno({ turno, mostrarHora = false, onEstado, onReprogramar, onUrgencia }) {
+// FE-10: en turnos atendidos, "Registrar atención" solo si aún no tiene una
+// (atencion === null) y "Ver notas" si ya existe (atencion con datos).
+function TarjetaTurno({
+  turno,
+  mostrarHora = false,
+  onEstado,
+  onReprogramar,
+  onUrgencia,
+  atencion,
+  onRegistrarAtencion,
+  onVerNotas,
+}) {
   const destinos = TRANSICIONES[turno.estado] || [];
   const accionable = ['pendiente', 'confirmado'].includes(turno.estado);
+  // undefined = el historial todavía no se cargó: no se ofrece ninguna acción.
+  const sinAtencion = turno.estado === 'atendido' && atencion === null;
+  const conAtencion = turno.estado === 'atendido' && Boolean(atencion);
   return (
     <div className="tarjeta agenda__turno">
       <div className="tarjeta__cabecera">
@@ -564,6 +840,22 @@ function TarjetaTurno({ turno, mostrarHora = false, onEstado, onReprogramar, onU
             onClick={() => onUrgencia(turno)}
           >
             Urgencia
+          </button>
+        </div>
+      )}
+      {sinAtencion && (
+        <div className="tarjeta__acciones">
+          <button type="button" className="boton" onClick={() => onRegistrarAtencion(turno)}>
+            Registrar atención
+          </button>
+        </div>
+      )}
+      {conAtencion && (
+        <div className="tarjeta__acciones">
+          <button type="button" className="boton boton--secundario" onClick={() => onVerNotas(turno, atencion)}>
+            {atencion.notas.length > 0
+              ? `Ver atención y notas (${atencion.notas.length})`
+              : 'Ver atención'}
           </button>
         </div>
       )}
