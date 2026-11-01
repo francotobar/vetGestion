@@ -31,6 +31,10 @@ function dividirSentencias(sql) {
 }
 
 async function main() {
+  if (env.DB_SSL_CA) {
+    throw new Error('Error: db:reset no se puede ejecutar con DB_SSL_CA configurado. Conéctate a la base local sin SSL o desactiva la variable.');
+  }
+
   if (!/^[A-Za-z0-9_]+$/.test(env.DB_NAME)) {
     throw new Error(`Nombre de base inválido: ${env.DB_NAME}`);
   }
@@ -40,6 +44,7 @@ async function main() {
     port: env.DB_PORT,
     user: env.DB_USER,
     password: env.DB_PASSWORD,
+    database: env.DB_NAME,
     dateStrings: true,
   });
 

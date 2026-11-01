@@ -13,6 +13,7 @@ const env = {
   DB_USER: process.env.DB_USER || 'root',
   DB_PASSWORD: process.env.DB_PASSWORD || '',
   DB_NAME: process.env.DB_NAME || 'vetgestion',
+  DB_SSL_CA: process.env.DB_SSL_CA,
   JWT_SECRET: process.env.JWT_SECRET || 'cambiar_esto',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   HORA_INICIO: process.env.HORA_INICIO || '09:00',

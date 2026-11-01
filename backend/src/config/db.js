@@ -13,6 +13,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   dateStrings: true,
+  ...(env.DB_SSL_CA && { ssl: { ca: env.DB_SSL_CA, rejectUnauthorized: true } }),
 });
 
 async function probarConexion() {
