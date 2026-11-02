@@ -30,7 +30,7 @@ function aCamel(mascota) {
 
 // camelCase (componentes) → snake_case (API). Los opcionales que llegan como
 // undefined no se serializan y el backend los toma como ausentes (schema.js).
-function aSnake(mascota) {
+export function aSnake(mascota) {
   return {
     nombre: mascota.nombre,
     especie: mascota.especie,

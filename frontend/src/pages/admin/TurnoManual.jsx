@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { buscar as buscarClientes, mascotasDelCliente } from '../../api/adminClientes.js';
+import { buscar as buscarClientes, crearMascota, mascotasDelCliente } from '../../api/adminClientes.js';
 import { crear as crearTurno } from '../../api/adminTurnos.js';
 import { listar as listarServicios } from '../../api/servicios.js';
 import { mensajeDeError } from '../../api/cliente.js';
 import Campo from '../../components/Campo.jsx';
 import SelectorFranja from '../../components/SelectorFranja.jsx';
+import FormMascota, { mascotaVacia } from '../../components/FormMascota.jsx';
 
 // Turno manual del administrador (FE-07, RF21), ruta /admin/turnos/nuevo.
 // Asistente de 5 pasos: Cliente (búsqueda por documento/nombre, BE-12) →
-// Mascota (las del cliente, GET /admin/clientes/:id/mascotas) → Servicio →
+// Mascota (las del cliente, GET /admin/clientes/:id/mascotas; si no tiene, o
+// si el admin la agrega, alta con FormMascota) → Servicio →
 // Fecha y franja (SelectorFranja, reutilizado de FE-04) → Confirmar con el
 // canal (telefonico o presencial; el backend crea el turno 'confirmado').
 // Si la búsqueda no encuentra al cliente se ofrece "Crear cliente" (FE-08).
@@ -48,6 +50,9 @@ export default function TurnoManual() {
   const [mascotas, setMascotas] = useState([]);
   const [cargandoMascotas, setCargandoMascotas] = useState(false);
   const [errorMascotas, setErrorMascotas] = useState('');
+  // Alta de mascota dentro del paso 2 (cuando no tiene o cuando el admin la agrega).
+  const [agregandoMascota, setAgregandoMascota] = useState(false);
+  const [errorMascota, setErrorMascota] = useState('');
 
   // Pasos 3 a 5.
   const [servicios, setServicios] = useState(null); // null = cargando
@@ -99,6 +104,8 @@ export default function TurnoManual() {
     setMascota(null); // la anterior pertenecía al cliente viejo
     setMascotas([]);
     setErrorMascotas('');
+    setAgregandoMascota(false);
+    setErrorMascota('');
     setPaso(2);
     setCargandoMascotas(true);
     try {
@@ -108,6 +115,20 @@ export default function TurnoManual() {
       setErrorMascotas(mensajeDeError(error, 'No pudimos cargar las mascotas del cliente.'));
     } finally {
       setCargandoMascotas(false);
+    }
+  }
+
+  // Alta de mascota desde este paso: la nueva queda seleccionada y servicio,
+  // fecha, franja y canal ya cargados no se tocan.
+  async function guardarMascota(datos) {
+    setErrorMascota('');
+    try {
+      const { data } = await crearMascota(cliente.id, datos);
+      setMascotas((lista) => [...lista, data]);
+      setMascota(data);
+      setAgregandoMascota(false);
+    } catch (error) {
+      setErrorMascota(mensajeDeError(error, 'No pudimos guardar la mascota. Revisá los datos e intentá nuevamente.'));
     }
   }
 
@@ -168,6 +189,8 @@ export default function TurnoManual() {
     setCanal('telefonico');
     setErrorCreacion('');
     setTurnoCreado(null);
+    setAgregandoMascota(false);
+    setErrorMascota('');
   }
 
   // Pantalla de éxito: el turno manual nace 'confirmado' (RF21, BE-10).
@@ -317,11 +340,7 @@ export default function TurnoManual() {
           )}
           {!cargandoMascotas && !errorMascotas && mascotas.length === 0 && (
             <div className="estado-vacio">
-              <p>Este cliente no tiene mascotas registradas.</p>
-              {/* La ficha del cliente (mascotas incluidas) se completa en FE-08. */}
-              <Link to={`/admin/clientes/${cliente?.id}`} className="boton">
-                Ver ficha del cliente
-              </Link>
+              <p>Este cliente no tiene mascotas registradas. Agregá una para cargar el turno.</p>
             </div>
           )}
           {mascotas.length > 0 && (
@@ -346,10 +365,39 @@ export default function TurnoManual() {
               ))}
             </ul>
           )}
+          {mascotas.length > 0 && !agregandoMascota && (
+            <button type="button" className="boton boton--secundario" onClick={() => setAgregandoMascota(true)}>
+              Agregar mascota
+            </button>
+          )}
+          {(agregandoMascota || (!cargandoMascotas && !errorMascotas && mascotas.length === 0)) && (
+            <div className="formulario formulario--ancho">
+              <h2>Agregar mascota</h2>
+              <FormMascota inicial={mascotaVacia} textoBoton="Guardar mascota" onGuardar={guardarMascota}>
+                {errorMascota && (
+                  <p className="error error--caja" role="alert">
+                    {errorMascota}
+                  </p>
+                )}
+              </FormMascota>
+              {mascotas.length > 0 && (
+                <div className="pagina__acciones">
+                  <button type="button" className="boton boton--secundario" onClick={() => setAgregandoMascota(false)}>
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           <div className="pagina__acciones">
             <button type="button" className="boton boton--secundario" onClick={() => setPaso(1)}>
               Atrás
             </button>
+            {mascota && (
+              <button type="button" className="boton" onClick={() => setPaso(3)}>
+                Continuar
+              </button>
+            )}
           </div>
         </div>
       )}

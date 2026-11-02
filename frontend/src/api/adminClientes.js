@@ -1,4 +1,5 @@
 import api from './cliente.js';
+import { aSnake } from './mascotas.js';
 
 // Endpoints de clientes del administrador (sección 6 del plan, BE-12/BE-13):
 //   GET  /admin/clientes?q=              → buscar por nombre, documento o email
@@ -8,8 +9,9 @@ import api from './cliente.js';
 //   POST /admin/clientes/:id/anonimizar  → supresión de datos (BE-15, RNF04)
 //   GET  /admin/clientes/:id/mascotas    → mascotas activas del cliente
 //
-// El resto del módulo (PUT editar, POST baja, POST mascotas) no lo consume
-// ninguna pantalla de FE-08. El backend real usa snake_case en las
+// POST /admin/clientes/:id/mascotas lo usa el turno manual (FE-07) para dar de
+// alta una mascota cuando el cliente no tiene ninguna. El resto del módulo
+// (PUT editar, POST baja) no lo consume ninguna pantalla. El backend real usa snake_case en las
 // respuestas: la conversión vive solo en esta capa, como en api/mascotas.js
 // y api/adminTurnos.js.
 
@@ -64,6 +66,15 @@ export function mascotasDelCliente(id) {
   return api.get(`/admin/clientes/${id}/mascotas`).then((respuesta) => ({
     ...respuesta,
     data: respuesta.data.map(aCamelMascota),
+  }));
+}
+
+// Alta de una mascota para el cliente (POST /admin/clientes/:id/mascotas).
+// Mismos campos y validación que la ficha de mascota (RF06, mascotaSchema).
+export function crearMascota(clienteId, datos) {
+  return api.post(`/admin/clientes/${clienteId}/mascotas`, aSnake(datos)).then((respuesta) => ({
+    ...respuesta,
+    data: aCamelMascota(respuesta.data),
   }));
 }
 
