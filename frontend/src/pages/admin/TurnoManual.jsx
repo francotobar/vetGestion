@@ -339,7 +339,7 @@ export default function TurnoManual() {
             </p>
           )}
           {!cargandoMascotas && !errorMascotas && mascotas.length === 0 && (
-            <div className="estado-vacio">
+            <div className="estado-vacio estado-vacio--aviso">
               <p>Este cliente no tiene mascotas registradas. Agregá una para cargar el turno.</p>
             </div>
           )}
@@ -366,9 +366,11 @@ export default function TurnoManual() {
             </ul>
           )}
           {mascotas.length > 0 && !agregandoMascota && (
-            <button type="button" className="boton boton--secundario" onClick={() => setAgregandoMascota(true)}>
-              Agregar mascota
-            </button>
+            <div className="pagina__acciones">
+              <button type="button" className="boton boton--secundario" onClick={() => setAgregandoMascota(true)}>
+                Agregar mascota
+              </button>
+            </div>
           )}
           {(agregandoMascota || (!cargandoMascotas && !errorMascotas && mascotas.length === 0)) && (
             <div className="formulario formulario--ancho">
@@ -389,7 +391,7 @@ export default function TurnoManual() {
               )}
             </div>
           )}
-          <div className="pagina__acciones">
+          <div className="pagina__acciones pagina__acciones--navegacion">
             <button type="button" className="boton boton--secundario" onClick={() => setPaso(1)}>
               Atrás
             </button>
@@ -434,7 +436,7 @@ export default function TurnoManual() {
               ))}
             </ul>
           )}
-          <div className="pagina__acciones">
+          <div className="pagina__acciones pagina__acciones--navegacion">
             <button type="button" className="boton boton--secundario" onClick={() => setPaso(2)}>
               Atrás
             </button>
@@ -459,7 +461,7 @@ export default function TurnoManual() {
               {errorCreacion}
             </p>
           )}
-          <div className="pagina__acciones">
+          <div className="pagina__acciones pagina__acciones--navegacion">
             <button type="button" className="boton boton--secundario" onClick={() => setPaso(3)}>
               Atrás
             </button>
@@ -514,7 +516,7 @@ export default function TurnoManual() {
               {errorCreacion}
             </p>
           )}
-          <div className="pagina__acciones">
+          <div className="pagina__acciones pagina__acciones--navegacion">
             <button
               type="button"
               className="boton boton--secundario"
