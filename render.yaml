@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: vetgestion-backend
+    env: node
+    plan: free
+    healthCheckPath: /api/salud
+    timeout: 4min
+    nodeVersion: 20
+    buildCommand: >
+      npm install --omit-dev
+    startCommand: node src/server.js
+    env:
+      PORT: 3000
+      DB_HOST: localhost
+      DB_USER: vetgestion
+      DB_PASSWORD: iua2026
+      DB_NAME: vetgestion
+      JWT_SECRET: cambiar_esto
+      FRONTEND_URL: ''
+      HORA_INICIO: 09:00
+      HORA_FIN: 19:00
+      SLOT_MINUTOS: 30
+      ANTELACION_HS: 24
+      DIAS_MAX_RESERVA: 60
+      TZ: America/Argentina/Buenos_Aires
+      NODE_ENV: production
+    secretEnvironmentVariables: {}
+
+  - type: static
+    name: vetgestion-frontend
+    env: static
+    plan: free
+    buildCommand: npm run build
+    rootDir: dist
+    healthCheckPath: /
+    env:
+      VITE_API_URL: ''
+      VITE_TZ: America/Argentina/Buenos_Aires
+    redirects:
+      - source: /api/*
+        destination: https://vetgestion-backend.onrender.com/api/:splat
+        force: false
+        headers: {}
