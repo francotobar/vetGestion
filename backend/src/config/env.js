@@ -22,6 +22,7 @@ const env = {
   ANTELACION_HS: Number(process.env.ANTELACION_HS) || 24,
   DIAS_MAX_RESERVA: Number(process.env.DIAS_MAX_RESERVA) || 60,
   TZ: process.env.TZ || 'America/Argentina/Buenos_Aires',
+  NODE_ENV: process.env.NODE_ENV || 'development',
 };
 
 console.log({
