@@ -4,7 +4,6 @@ const path = require('path');
 
 require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
-console.log('DB_USER en process.env:', process.env.DB_USER);
 
 const env = {
   PORT: Number(process.env.PORT) || 3000,
@@ -25,11 +24,5 @@ const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
 };
 
-console.log({
-  DB_HOST: env.DB_HOST,
-  DB_PORT: env.DB_PORT,
-  DB_USER: env.DB_USER,
-  DB_NAME: env.DB_NAME,
-});
 
 module.exports = { env };
