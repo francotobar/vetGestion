@@ -29,6 +29,9 @@ const COOKIE_SESION = 'token';
 const DURACION_SESION_MS = 8 * 60 * 60 * 1000;
 
 function opcionesCookie() {
+  if (env.NODE_ENV === 'production') {
+    return { httpOnly: true, sameSite: 'none', secure: true, maxAge: DURACION_SESION_MS };
+  }
   return { httpOnly: true, sameSite: 'lax', secure: false, maxAge: DURACION_SESION_MS };
 }
 
