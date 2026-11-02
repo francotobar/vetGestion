@@ -45,7 +45,7 @@ Hay **dos formas** de conectar el frontend con el backend en Render. Elegí la o
 Cuando se despliegue la base de datos en Aiven:
 
 - Setear `DB_HOST` al hostname de conexión de Aiven (ej. `aws.connect-to-aiven.com`).
-- Setear `DB_PORT=14530` (puerto SSL de Aiven por defecto).
+- Setear `DB_PORT` con el puerto que figura en el panel de Aiven de tu servicio (no es fijo).
 - Setear `DB_SSL_CA` con el contenido del certificado CA de Aiven (base64 o texto). Esto activa `ssl: { ca: obtenerSSLCA(...), rejectUnauthorized: true }` en `config/db.js`.
 - Mantener `DB_USER`, `DB_PASSWORD` y `DB_NAME` según la base de datos Aiven creada.
 
