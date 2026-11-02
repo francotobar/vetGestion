@@ -13,6 +13,10 @@ app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+if (env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Módulos (sección 6 del plan)
 app.use('/api/auth', require('./modules/auth/routes'));
 app.use('/api/mascotas', require('./modules/mascotas/routes'));
