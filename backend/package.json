@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "TZ=America/Argentina/Buenos_Aires nodemon src/server.js",
     "start": "TZ=America/Argentina/Buenos_Aires node src/server.js",
-    "test": "TZ=America/Argentina/Buenos_Aires jest --passWithNoTests",
+    "test": "TZ=America/Argentina/Buenos_Aires [ -z \"${DB_SSL_CA}\" ] && jest --passWithNoTests || echo 'Error: npm test no se puede ejecutar con DB_SSL_CA configurado. Conéctate a la base local sin SSL o desactiva la variable.'",
     "db:reset": "TZ=America/Argentina/Buenos_Aires node db/reset.js",
     "seed": "TZ=America/Argentina/Buenos_Aires node db/seed.js"
   },
@@ -27,7 +27,7 @@
     "nodemon": "^3.1.9",
     "supertest": "^7.0.0"
   },
-  "jest": {
+"jest": {
     "testTimeout": 15000
   }
 }
