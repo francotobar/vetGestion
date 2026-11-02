@@ -4,6 +4,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 const { pool } = require('../src/config/db');
+const { env } = require('../src/config/env');
 
 const DOC_REGISTRO = 'TEST-10000001';
 const DOC_VINCULO = 'TEST-20000002';
@@ -13,6 +14,7 @@ const DOC_EMAIL = 'TEST-40000001';
 const DOC_BLOQUEO = 'TEST-50000001';
 const DOC_RECUPERAR = 'TEST-60000001';
 const DOC_RESET = 'TEST-70000001';
+const DOC_LOGOUT = 'TEST-80000001';
 
 async function limpiarTests() {
   await pool.execute('DELETE FROM usuarios WHERE documento LIKE ?', ['TEST-%']);
@@ -182,6 +184,58 @@ describe('POST /api/auth/login y GET /api/auth/me', () => {
     const logout = await request(app).post('/api/auth/logout').set('Cookie', cookie);
     expect(logout.status).toBe(200);
     expect(logout.headers['set-cookie'][0]).toContain('token=;');
+  });
+});
+
+describe('POST /api/auth/logout (cookie de sesión)', () => {
+  async function iniciarSesionDePrueba() {
+    await request(app).post('/api/auth/registro').send({
+      documento: DOC_LOGOUT,
+      nombre: 'Test',
+      apellido: 'Logout',
+      telefono: '1133334444',
+      email: 'test_logout@example.com',
+      password: 'clave12',
+      consentimiento: true,
+    });
+    const login = await request(app).post('/api/auth/login').send({ documento: DOC_LOGOUT, password: 'clave12' });
+    expect(login.status).toBe(200);
+    return login.headers['set-cookie'][0];
+  }
+
+  test('manda la cookie vencida (Expires en 1970) con los mismos atributos del login', async () => {
+    const cookieLogin = await iniciarSesionDePrueba();
+    expect(cookieLogin).toMatch(/SameSite=Lax/i);
+
+    const res = await request(app).post('/api/auth/logout').set('Cookie', cookieLogin.split(';')[0]);
+    expect(res.status).toBe(200);
+
+    const cookieLogout = res.headers['set-cookie'][0];
+    expect(cookieLogout).toMatch(/^token=;/);
+    expect(cookieLogout).toMatch(/Expires=Thu, 01 Jan 1970 00:00:00 GMT/);
+    expect(cookieLogout).not.toMatch(/Max-Age/i);
+    expect(cookieLogout).toMatch(/Path=\//);
+    expect(cookieLogout).toMatch(/HttpOnly/);
+    expect(cookieLogout).toMatch(/SameSite=Lax/i);
+    expect(cookieLogout).not.toMatch(/Secure/);
+  });
+
+  test('en producción, el logout borra la cookie con SameSite=None y Secure, igual que el login', async () => {
+    const entornoOriginal = env.NODE_ENV;
+    env.NODE_ENV = 'production';
+    try {
+      const cookieLogin = await iniciarSesionDePrueba();
+      expect(cookieLogin).toMatch(/Secure/);
+      expect(cookieLogin).toMatch(/SameSite=None/i);
+
+      const res = await request(app).post('/api/auth/logout').set('Cookie', cookieLogin.split(';')[0]);
+      const cookieLogout = res.headers['set-cookie'][0];
+      expect(cookieLogout).toMatch(/Expires=Thu, 01 Jan 1970 00:00:00 GMT/);
+      expect(cookieLogout).toMatch(/Secure/);
+      expect(cookieLogout).toMatch(/SameSite=None/i);
+    } finally {
+      env.NODE_ENV = entornoOriginal;
+    }
   });
 });
 

@@ -28,11 +28,20 @@ function fechaLocalTexto(momento) {
 const COOKIE_SESION = 'token';
 const DURACION_SESION_MS = 8 * 60 * 60 * 1000;
 
-function opcionesCookie() {
+// Login y logout comparten estos atributos: el navegador reemplaza o borra una
+// cookie solo si el Set-Cookie coincide con la que guardó (path, sameSite,
+// secure, httpOnly).
+function atributosCookie() {
   if (env.NODE_ENV === 'production') {
-    return { httpOnly: true, sameSite: 'none', secure: true, maxAge: DURACION_SESION_MS };
+    return { httpOnly: true, sameSite: 'none', secure: true, path: '/' };
   }
-  return { httpOnly: true, sameSite: 'lax', secure: false, maxAge: DURACION_SESION_MS };
+  return { httpOnly: true, sameSite: 'lax', secure: false, path: '/' };
+}
+
+// Solo el login lleva maxAge. En Express 4, maxAge se convierte en expires, y
+// eso impediría borrar la cookie desde el logout.
+function opcionesCookie() {
+  return { ...atributosCookie(), maxAge: DURACION_SESION_MS };
 }
 
 // Datos del usuario que expone la API (nunca password_hash ni intentos).
@@ -145,7 +154,7 @@ async function login({ documento, password }, res) {
 
 // POST /auth/logout: borra la cookie de sesión.
 function cerrarSesion(res) {
-  res.clearCookie(COOKIE_SESION, { httpOnly: true, sameSite: 'lax', secure: false });
+  res.clearCookie(COOKIE_SESION, atributosCookie());
   return { mensaje: 'Sesión cerrada' };
 }
 
