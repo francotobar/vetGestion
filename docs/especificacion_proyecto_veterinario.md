@@ -61,23 +61,26 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
 * **RF10 – Consulta de turnos:** El cliente lista sus turnos con su estado.
 * **RF11 – Cancelación y reprogramación:** El cliente puede cancelar o reprogramar un turno con una antelación mínima configurable (por defecto 24 h). Un turno reprogramado por el cliente vuelve a *pendiente*.
 * **RF12 – Historial clínico:** El cliente consulta el historial **completo** de cada mascota (fecha, servicio, anamnesis, diagnóstico, tratamiento, medicación, vacunas, observaciones y notas aclaratorias).
-* **RF13 – Notificaciones de recordatorio:** *Fuera del MVP (trabajo futuro).* Recordatorio por email 24 h antes, con consentimiento del cliente.
 
 ### Administrador
-* **RF19 – Gestión de servicios:** Alta, modificación y baja lógica del catálogo de servicios (nombre, descripción, activo). Los clientes ven y eligen solo servicios activos.
-* **RF20 – Gestión de clientes y mascotas:** CRUD de clientes y sus mascotas, con estado de cuenta (con cuenta / sin cuenta / inactiva). El administrador crea y edita las mascotas del cliente, pero todavía no las da de baja (trabajo futuro).
-* **RF21 – Gestión de turnos:**
+* **RF13 – Gestión de servicios:** Alta, modificación y baja lógica del catálogo de servicios (nombre, descripción, activo). Los clientes ven y eligen solo servicios activos.
+* **RF14 – Gestión de clientes y mascotas:** CRUD de clientes y sus mascotas, con estado de cuenta (con cuenta / sin cuenta / inactiva). El administrador crea y edita las mascotas del cliente, pero todavía no las da de baja (trabajo futuro).
+* **RF15 – Gestión de turnos:**
   * Ver la agenda por día y por semana.
   * Crear turnos manuales (canal telefónico o presencial) para un cliente existente; si el cliente no existe, se lo da de alta asistida (RF01b). El turno manual nace *confirmado*.
   * Confirmar turnos pendientes, cancelarlos, reprogramarlos y marcarlos como *atendido* o *ausente*.
   * Cada turno registra su canal de origen (web / telefónico / presencial) y quién lo cargó.
   * Transiciones válidas: pendiente → confirmado | cancelado; confirmado → atendido | ausente | cancelado. Los estados atendido, ausente y cancelado son finales.
-* **RF22 – Gestión de personal:** *Eliminado.* Existe una cuenta de administrador inicial creada por seed.
-* **RF23 – Gestión de horarios y feriados:** El administrador carga y elimina feriados. El horario (09:00–19:00, 30 min, lunes a viernes) es configuración del sistema. Las franjas en feriados o fuera de horario no se ofrecen.
-* **RF24 – Prevención de duplicados:** Al dar de alta un cliente, el sistema rechaza documento o email ya existentes e informa el nombre del cliente existente (para reutilizar su ficha); la respuesta no incluye el id.
-* **RF25 – Urgencias:** El administrador puede cancelar o reprogramar cualquier turno por urgencia médica, sin respetar la antelación mínima, indicando un motivo. El sistema marca el turno como urgencia y muestra el contacto (teléfono y email si existe) de los clientes afectados para que el administrador los avise manualmente.
-* **RF26 – Registro de atención clínica:** Para un turno *atendido*, el administrador carga la atención: nombre del profesional que atendió (texto), anamnesis, diagnóstico, tratamiento, medicación, vacunas aplicadas y observaciones. Queda asociada al turno y a la mascota, y es **inmutable** una vez guardada.
-* **RF27 – Nota aclaratoria:** El administrador puede agregar notas aclaratorias a una atención ya cargada. La nota no modifica el registro original; se muestra debajo con fecha y autor.
+
+* **RF26 – Gestión de horarios y feriados:** El administrador carga y elimina feriados. El horario (09:00–19:00, 30 min, lunes a viernes) es configuración del sistema. Las franjas en feriados o fuera de horario no se ofrecen.
+* **RF17 – Prevención de duplicados:** Al dar de alta un cliente, el sistema rechaza documento o email ya existentes e informa el nombre del cliente existente (para reutilizar su ficha); la respuesta no incluye el id.
+* **RF18 – Urgencias:** El administrador puede cancelar o reprogramar cualquier turno por urgencia médica, sin respetar la antelación mínima, indicando un motivo. El sistema marca el turno como urgencia y muestra el contacto (teléfono y email si existe) de los clientes afectados para que el administrador los avise manualmente.
+* **RF19 – Registro de atención clínica:** Para un turno *atendido*, el administrador carga la atención: nombre del profesional que atendió (texto), anamnesis, diagnóstico, tratamiento, medicación, vacunas aplicadas y observaciones. Queda asociada al turno y a la mascota, y es **inmutable** una vez guardada.
+* **RF20 – Nota aclaratoria:** El administrador puede agregar notas aclaratorias a una atención ya cargada. La nota no modifica el registro original; se muestra debajo con fecha y autor.
+
+## Fuera del MVP o Eliminados
+* **RF – Notificaciones de recordatorio:** *Fuera del MVP (trabajo futuro). Anteriormente RF13. * Recordatorio por email 24 h antes, con consentimiento del cliente.
+* **RF – Gestión de personal:** *Eliminado. Anteriormente RF22* Existe una cuenta de administrador inicial creada por seed.
 
 ---
 
@@ -140,8 +143,8 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
 ## Trabajo futuro
 * Envío real de emails con SMTP: la recuperación de contraseña está simulada (el enlace se imprime en la consola del servidor) (RF03).
 * Edición de perfil propio por el cliente; hoy la rectificación la hace el administrador (RNF04).
-* Baja lógica de una mascota realizada por el administrador (RF20).
-* Id de la ficha existente en la respuesta de documento o email duplicado (RF24).
+* Baja lógica de una mascota realizada por el administrador (RF14).
+* Id de la ficha existente en la respuesta de documento o email duplicado (RF17).
 * Verificación de rendimiento (RNF07) y prueba de usabilidad con usuarios reales (RNF08).
 
 ---
@@ -160,6 +163,6 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
 
 ## Alcance del MVP (prioridades)
 
-* **P0 (imprescindible):** RF01, RF02, RF04, RF05–RF11, RF19, RF20, RF21, RF23, RF24, RF25, consentimiento (RNF04), auditoría simple (RNF05), concurrencia (RF09), desbloqueo por administrador (RF03).
-* **P1 (implementado):** RF12, RF26, RF27 (historial clínico) y desbloqueo/recuperación por email (RF03). Supresión/anonimización (RNF04).
-* **P2 (trabajo futuro, fuera de la entrega):** RF13 (recordatorios), backups automáticos, disponibilidad del 99 %.
+* **P0 (imprescindible):** RF01, RF02, RF04, RF05–RF11, RF13, RF14, RF15, RF16, RF17, RF18, consentimiento (RNF04), auditoría simple (RNF05), concurrencia (RF09), desbloqueo por administrador (RF03).
+* **P1 (implementado):** RF12, RF19, RF20 (historial clínico) y desbloqueo/recuperación por email (RF03). Supresión/anonimización (RNF04).
+* **P2 (trabajo futuro, fuera de la entrega):** Anteriormente RF13. Actualmente sin número de RF asignado - (recordatorios), backups automáticos, disponibilidad del 99 %.

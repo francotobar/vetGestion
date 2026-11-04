@@ -8,10 +8,9 @@
 * **Integrantes:** Franco Tobar y Gisella Burgos
 * **Patrocinador / Cliente:** Docente de la Cátedra
 * **Fecha de Inicio:** 4 de Septiembre de 2026
-* **Fecha de Entrega Final:** 4 de Noviembre de 2026 (**inamovible**)
+* **Fecha de Entrega Final:** 4 de Noviembre de 2026
 * **Tiempo restante al 26/10:** 8 días laborables (26, 27, 28, 29 y 30 de octubre; 2, 3 y 4 de noviembre), contando el 26 como día de trabajo.
 * **Repositorio de Código:** GitHub
-* **Gestor de Tareas:** Trello
 * **Stack Tecnológico:** JavaScript, React, Node.js (Express), MySQL
 * **Despliegue:** frontend y backend en Render y base de datos en Aiven; todo puede evaluarse en local.
 
@@ -133,8 +132,7 @@ Cada módulo debe indicar: **responsabilidad principal**, **entradas** (props, p
 Este documento, junto con la *Especificación del proyecto* y el *Plan de Desarrollo MVP*, se entrega a una IA o a agentes de programación como **contexto primario de referencia**. Sirve para:
 
 1. Generar la hoja de ruta de los días de trabajo con las tareas exactas.
-2. Cargar en Trello las épicas, historias y tarjetas con sus criterios de aceptación.
-3. Generar el *boilerplate* de la arquitectura en 3 capas con Node.js y React.
-4. Escribir endpoints y componentes respetando el bajo acoplamiento y las restricciones del proyecto.
+2. Generar el *boilerplate* de la arquitectura en 3 capas con Node.js y React.
+3. Escribir endpoints y componentes respetando el bajo acoplamiento y las restricciones del proyecto.
 
 **Orden de precedencia ante contradicciones:** (1) Especificación del proyecto, (2) Plan de Desarrollo MVP, (3) este documento.

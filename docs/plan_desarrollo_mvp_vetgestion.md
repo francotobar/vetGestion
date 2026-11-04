@@ -490,6 +490,6 @@ Componentes compartidos: `SelectorFranja` (usado por reserva, reprogramación y 
 
 ## 9. Fuera del MVP (documentar como trabajo futuro)
 
-Recordatorios por email 24 h antes (RF13), backups automáticos, disponibilidad garantizada del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales. Quedan también como trabajo futuro la baja de mascota realizada por el administrador (RF20), la edición de perfil propio por el cliente (RNF04) y el id de la ficha existente en la respuesta de duplicado (RF24).
+Recordatorios por email 24 h antes (RF13), backups automáticos, disponibilidad garantizada del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales. Quedan también como trabajo futuro la baja de mascota realizada por el administrador (RF14), la edición de perfil propio por el cliente (RNF04) y el id de la ficha existente en la respuesta de duplicado (RF17).
 
 
