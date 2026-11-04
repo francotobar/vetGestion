@@ -748,12 +748,6 @@ form > .boton {
   font-weight: 600;
 }
 
-.inicio-etiqueta--alerta {
-  border-color: #fde68a;
-  background: #fef3c7;
-  color: #92400e;
-}
-
 .inicio-acciones {
   display: flex;
   flex-wrap: wrap;
@@ -1002,7 +996,7 @@ form + .aviso {
   color: #64748b;
 }
 
-/* Contacto: datos provisorios, con íconos simples */
+/* Contacto, con íconos simples */
 .inicio-contacto {
   display: grid;
   gap: 0.75rem;

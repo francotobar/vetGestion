@@ -285,7 +285,6 @@ export default function Inicio() {
 
       <section className="inicio-seccion" aria-labelledby="inicio-contacto-titulo">
         <div className="inicio-seccion__cabecera">
-          <span className="inicio-etiqueta inicio-etiqueta--alerta">Datos provisorios</span>
           <h2 id="inicio-contacto-titulo">Contacto</h2>
         </div>
         <ul className="inicio-contacto">
@@ -295,7 +294,7 @@ export default function Inicio() {
             </span>
             <div>
               <p className="inicio-contacto__rotulo">Teléfono</p>
-              <p className="inicio-contacto__dato">0000-000000</p>
+              <p className="inicio-contacto__dato">1512345678</p>
             </div>
           </li>
           <li>
@@ -304,7 +303,7 @@ export default function Inicio() {
             </span>
             <div>
               <p className="inicio-contacto__rotulo">Correo electrónico</p>
-              <p className="inicio-contacto__dato">contacto@ejemplo.com</p>
+              <p className="inicio-contacto__dato">vetgestion@example.com</p>
             </div>
           </li>
           <li>
@@ -313,7 +312,7 @@ export default function Inicio() {
             </span>
             <div>
               <p className="inicio-contacto__rotulo">Dirección</p>
-              <p className="inicio-contacto__dato">A definir</p>
+              <p className="inicio-contacto__dato">Avenida Siempre Viva 123</p>
             </div>
           </li>
         </ul>

@@ -728,7 +728,7 @@ export default function Agenda() {
       {accion?.tipo === 'notas' && (
         <Modal
           titulo="Notas aclaratorias"
-          mensaje={`Atención de ${turnoAccion.mascotaNombre} del ${dayjs(turnoAccion.fechaHora).format('DD/MM/YYYY')}. El texto original es inmutable: las notas se agregan debajo (RF27).`}
+          mensaje={`Atención de ${turnoAccion.mascotaNombre} del ${dayjs(turnoAccion.fechaHora).format('DD/MM/YYYY')}. El texto original es inmutable: las notas se agregan debajo.`}
           textoConfirmar="Agregar nota"
           tipo="normal"
           onConfirmar={confirmarNota}

@@ -120,7 +120,7 @@ describe('Autorización en endpoints de admin BE-11', () => {
     const res = await request(app)
       .patch('/api/admin/turnos/9999/reprogramar')
       .set('Cookie', cookieCliente)
-      .send({ fecha: '2026-11-20', hora: '10:00' });
+      .send({ fecha: '2026-12-04', hora: '10:00' });
     expect(res.status).toBe(403);
     expect(res.body.codigo).toBe('SIN_PERMISO');
   });
@@ -137,7 +137,7 @@ describe('Autorización en endpoints de admin BE-11', () => {
 
 describe('PATCH /api/admin/turnos/:id/estado (cambiarEstado)', () => {
   test('transición válida: pendiente -> confirmado', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 09:00:00', estado: 'pendiente' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 09:00:00', estado: 'pendiente' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/estado`)
@@ -151,7 +151,7 @@ describe('PATCH /api/admin/turnos/:id/estado (cambiarEstado)', () => {
   });
 
   test('transición válida: confirmado -> atendido', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 09:30:00', estado: 'confirmado' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 09:30:00', estado: 'confirmado' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/estado`)
@@ -163,7 +163,7 @@ describe('PATCH /api/admin/turnos/:id/estado (cambiarEstado)', () => {
   });
 
   test('transición válida: confirmado -> ausente', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 10:00:00', estado: 'confirmado' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 10:00:00', estado: 'confirmado' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/estado`)
@@ -175,7 +175,7 @@ describe('PATCH /api/admin/turnos/:id/estado (cambiarEstado)', () => {
   });
 
   test('transición válida: confirmado -> cancelado', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 10:30:00', estado: 'confirmado' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 10:30:00', estado: 'confirmado' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/estado`)
@@ -187,7 +187,7 @@ describe('PATCH /api/admin/turnos/:id/estado (cambiarEstado)', () => {
   });
 
   test('Criterio de aceptación: dado un turno atendido, cuando se intenta cancelar, responde 422', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 11:00:00', estado: 'atendido' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 11:00:00', estado: 'atendido' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/estado`)
@@ -199,7 +199,7 @@ describe('PATCH /api/admin/turnos/:id/estado (cambiarEstado)', () => {
   });
 
   test('transiciones inválidas: ausente -> cancelado o cancelado -> confirmado', async () => {
-    const tAusente = await insertarTurno({ fechaHora: '2026-11-02 11:30:00', estado: 'ausente' });
+    const tAusente = await insertarTurno({ fechaHora: '2026-11-16 11:30:00', estado: 'ausente' });
     const resAus = await request(app)
       .patch(`/api/admin/turnos/${tAusente}/estado`)
       .set('Cookie', cookieAdmin)
@@ -207,7 +207,7 @@ describe('PATCH /api/admin/turnos/:id/estado (cambiarEstado)', () => {
     expect(resAus.status).toBe(422);
     expect(resAus.body.codigo).toBe('TRANSICION_INVALIDA');
 
-    const tCancelado = await insertarTurno({ fechaHora: '2026-11-02 12:00:00', estado: 'cancelado' });
+    const tCancelado = await insertarTurno({ fechaHora: '2026-11-16 12:00:00', estado: 'cancelado' });
     const resCanc = await request(app)
       .patch(`/api/admin/turnos/${tCancelado}/estado`)
       .set('Cookie', cookieAdmin)
@@ -238,69 +238,69 @@ describe('PATCH /api/admin/turnos/:id/estado (cambiarEstado)', () => {
 describe('PATCH /api/admin/turnos/:id/reprogramar (reprogramarComoAdmin)', () => {
   test('reprograma turno sin antelación mínima y conserva estado confirmado', async () => {
     // Turno para dentro de 2 horas (el cliente no podría por antelacion_hs=24)
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 12:30:00', estado: 'confirmado' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 12:30:00', estado: 'confirmado' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/reprogramar`)
       .set('Cookie', cookieAdmin)
-      .send({ fecha: '2026-11-03', hora: '14:00' });
+      .send({ fecha: '2026-11-17', hora: '14:00' });
 
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(turnoId);
     expect(res.body.estado).toBe('confirmado'); // Conserva el estado
-    expect(res.body.fecha_hora).toBe('2026-11-03 14:00:00');
+    expect(res.body.fecha_hora).toBe('2026-11-17 14:00:00');
     expect(res.body.modificado_por).toBe(adminId);
   });
 
   test('reprograma turno conservando estado pendiente', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 13:00:00', estado: 'pendiente' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 13:00:00', estado: 'pendiente' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/reprogramar`)
       .set('Cookie', cookieAdmin)
-      .send({ fecha: '2026-11-03', hora: '14:30' });
+      .send({ fecha: '2026-11-17', hora: '14:30' });
 
     expect(res.status).toBe(200);
     expect(res.body.estado).toBe('pendiente');
-    expect(res.body.fecha_hora).toBe('2026-11-03 14:30:00');
+    expect(res.body.fecha_hora).toBe('2026-11-17 14:30:00');
   });
 
   test('no permite reprogramar si el turno está atendido o cancelado (422)', async () => {
-    const tAtendido = await insertarTurno({ fechaHora: '2026-11-02 13:30:00', estado: 'atendido' });
+    const tAtendido = await insertarTurno({ fechaHora: '2026-11-16 13:30:00', estado: 'atendido' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${tAtendido}/reprogramar`)
       .set('Cookie', cookieAdmin)
-      .send({ fecha: '2026-11-03', hora: '15:00' });
+      .send({ fecha: '2026-11-17', hora: '15:00' });
 
     expect(res.status).toBe(422);
     expect(res.body.codigo).toBe('TRANSICION_INVALIDA');
   });
 
   test('falla con 409 FRANJA_OCUPADA si la franja destino está ocupada', async () => {
-    await insertarTurno({ fechaHora: '2026-11-03 15:30:00', estado: 'pendiente' });
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 14:00:00', estado: 'confirmado' });
+    await insertarTurno({ fechaHora: '2026-11-17 15:30:00', estado: 'pendiente' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 14:00:00', estado: 'confirmado' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/reprogramar`)
       .set('Cookie', cookieAdmin)
-      .send({ fecha: '2026-11-03', hora: '15:30' });
+      .send({ fecha: '2026-11-17', hora: '15:30' });
 
     expect(res.status).toBe(409);
     expect(res.body.codigo).toBe('FRANJA_OCUPADA');
 
     // El turno original queda intacto
     const [[turno]] = await pool.execute('SELECT fecha_hora FROM turnos WHERE id = ?', [turnoId]);
-    expect(turno.fecha_hora).toBe('2026-11-02 14:00:00');
+    expect(turno.fecha_hora).toBe('2026-11-16 14:00:00');
   });
 
   test('falla con 422 FRANJA_INVALIDA si la franja es fin de semana', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 14:30:00', estado: 'confirmado' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 14:30:00', estado: 'confirmado' });
 
     const res = await request(app)
       .patch(`/api/admin/turnos/${turnoId}/reprogramar`)
       .set('Cookie', cookieAdmin)
-      .send({ fecha: '2026-11-07', hora: '10:00' }); // Sábado
+      .send({ fecha: '2026-11-21', hora: '10:00' }); // Sábado
 
     expect(res.status).toBe(422);
     expect(res.body.codigo).toBe('FRANJA_INVALIDA');
@@ -309,7 +309,7 @@ describe('PATCH /api/admin/turnos/:id/reprogramar (reprogramarComoAdmin)', () =>
 
 describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
   test('Criterio de aceptación: urgencia con acción cancelar pone cancelado, es_urgencia=1, motivo guardado y devuelve contacto del cliente', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 15:00:00', estado: 'confirmado' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 15:00:00', estado: 'confirmado' });
 
     const res = await request(app)
       .post(`/api/admin/turnos/${turnoId}/urgencia`)
@@ -340,7 +340,7 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
   });
 
   test('urgencia con acción reprogramar cambia fecha_hora, conserva estado, pone es_urgencia=1 y devuelve contacto', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 15:30:00', estado: 'confirmado' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 15:30:00', estado: 'confirmado' });
 
     const res = await request(app)
       .post(`/api/admin/turnos/${turnoId}/urgencia`)
@@ -348,21 +348,21 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
       .send({
         accion: 'reprogramar',
         motivo: 'Urgencia felina: obstrucción uretral',
-        fecha: '2026-11-03',
+        fecha: '2026-11-17',
         hora: '16:00',
       });
 
     expect(res.status).toBe(200);
     expect(res.body.turno.estado).toBe('confirmado'); // Conserva el estado
-    expect(res.body.turno.fecha_hora).toBe('2026-11-03 16:00:00');
+    expect(res.body.turno.fecha_hora).toBe('2026-11-17 16:00:00');
     expect(res.body.turno.es_urgencia).toBe(1);
     expect(res.body.turno.motivo).toBe('Urgencia felina: obstrucción uretral');
     expect(res.body.cliente.telefono).toBe('1155556666');
   });
 
   test('urgencia con acción reprogramar a franja ocupada devuelve 409 FRANJA_OCUPADA', async () => {
-    await insertarTurno({ fechaHora: '2026-12-14 16:30:00', estado: 'pendiente' });
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 16:00:00', estado: 'confirmado' });
+    await insertarTurno({ fechaHora: '2026-12-28 16:30:00', estado: 'pendiente' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 16:00:00', estado: 'confirmado' });
 
     const res = await request(app)
       .post(`/api/admin/turnos/${turnoId}/urgencia`)
@@ -370,7 +370,7 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
       .send({
         accion: 'reprogramar',
         motivo: 'Urgencia respiratoria',
-        fecha: '2026-12-14',
+        fecha: '2026-12-28',
         hora: '16:30',
       });
 
@@ -379,12 +379,12 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
 
     // No modificó el turno
     const [[turno]] = await pool.execute('SELECT fecha_hora, es_urgencia FROM turnos WHERE id = ?', [turnoId]);
-    expect(turno.fecha_hora).toBe('2026-11-02 16:00:00');
+    expect(turno.fecha_hora).toBe('2026-11-16 16:00:00');
     expect(turno.es_urgencia).toBe(0);
   });
 
   test('no se puede aplicar urgencia a un turno ya cancelado o atendido (422)', async () => {
-    const tCanc = await insertarTurno({ fechaHora: '2026-11-02 16:30:00', estado: 'cancelado' });
+    const tCanc = await insertarTurno({ fechaHora: '2026-11-16 16:30:00', estado: 'cancelado' });
 
     const res = await request(app)
       .post(`/api/admin/turnos/${tCanc}/urgencia`)
@@ -399,7 +399,7 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
   });
 
   test('validación zod: motivo obligatorio y falta de fecha/hora en reprogramar (400)', async () => {
-    const turnoId = await insertarTurno({ fechaHora: '2026-11-02 17:00:00', estado: 'confirmado' });
+    const turnoId = await insertarTurno({ fechaHora: '2026-11-16 17:00:00', estado: 'confirmado' });
 
     // Sin motivo
     const res1 = await request(app)

@@ -1,7 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import RutaProtegida from './components/RutaProtegida.jsx';
-import PaginaEnConstruccion from './components/PaginaEnConstruccion.jsx';
 import Inicio from './pages/publicas/Inicio.jsx';
 import Login from './pages/publicas/Login.jsx';
 import Registro from './pages/publicas/Registro.jsx';
@@ -131,7 +130,15 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<PaginaEnConstruccion titulo="Página no encontrada" />} />
+        <Route
+          path="*"
+          element={
+            <section className="pagina">
+              <h1>Página no encontrada</h1>
+              <p>La dirección que buscás no existe.</p>
+            </section>
+          }
+        />
       </Route>
     </Routes>
   );
