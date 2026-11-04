@@ -63,10 +63,6 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
 * **RF12 – Historial clínico:** El cliente consulta el historial **completo** de cada mascota (fecha, servicio, anamnesis, diagnóstico, tratamiento, medicación, vacunas, observaciones y notas aclaratorias).
 * **RF13 – Notificaciones de recordatorio:** *Fuera del MVP (trabajo futuro).* Recordatorio por email 24 h antes, con consentimiento del cliente.
 
-### Profesional (Médico Veterinario)
-* **RF14 a RF17 – Eliminados.** El profesional no accede al sistema.
-* **RF18 – Estado del turno:** *Pasa al Administrador* (ver RF21).
-
 ### Administrador
 * **RF19 – Gestión de servicios:** Alta, modificación y baja lógica del catálogo de servicios (nombre, descripción, activo). Los clientes ven y eligen solo servicios activos.
 * **RF20 – Gestión de clientes y mascotas:** CRUD de clientes y sus mascotas, con estado de cuenta (con cuenta / sin cuenta / inactiva).
