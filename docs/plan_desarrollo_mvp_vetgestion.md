@@ -356,11 +356,8 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 
 ---
 
-## 7. Plan por días y tareas
 
-Reparto sugerido: **Franco → backend/BD**, **Gisella → frontend**. Cada día se integra en `main` antes de cerrar. Los IDs sirven como tarjetas de Trello.
-
-### Día 1 — Lunes 26/10: Base, autenticación y contrato de API
+### Día 1 — Base, autenticación y contrato de API
 
 **BE-01 [Franco, P0] Setup backend.** Proyecto Node/Express, `.env`, `helmet`, `cors`, `cookie-parser`, manejador de errores central, conexión `mysql2` (`dateStrings:true`, pool), `GET /api/salud`.
 *Aceptación:* **Dado** el servidor levantado, **cuando** se llama `/api/salud`, **entonces** responde `{ok:true}` y la BD conecta.
@@ -389,7 +386,7 @@ Reparto sugerido: **Franco → backend/BD**, **Gisella → frontend**. Cada día
 
 ---
 
-### Día 2 — Martes 27/10: Mascotas, catálogo, feriados y disponibilidad
+### Día 2 — Mascotas, catálogo, feriados y disponibilidad
 
 **BE-05 [Franco, P0] Mascotas (cliente).** CRUD propio con validación (especie `perro|gato`, sexo, fecha de nacimiento no futura, peso > 0).
 *Aceptación:* **Dado** el cliente A, **cuando** pide una mascota del cliente B, **entonces** 404.
@@ -412,7 +409,7 @@ Reparto sugerido: **Franco → backend/BD**, **Gisella → frontend**. Cada día
 
 ---
 
-### Día 3 — Miércoles 28/10: Ciclo completo de turnos y agenda del administrador
+### Día 3 — Ciclo completo de turnos y agenda del administrador
 
 **BE-09 [Franco, P0] Mis turnos, cancelar y reprogramar (cliente).** Según sección 5.
 *Aceptación:* **Dado** un turno dentro de las próximas 24 h, **cuando** el cliente intenta cancelar, **entonces** 422 `ANTELACION_INSUFICIENTE`. **Dado** un turno a 48 h, **cuando** reprograma a una franja ocupada, **entonces** 409 y el turno original queda intacto.
@@ -433,7 +430,7 @@ Reparto sugerido: **Franco → backend/BD**, **Gisella → frontend**. Cada día
 
 ---
 
-### Día 4 — Jueves 29/10: Clientes, historial clínico, desbloqueo y privacidad (congelamiento de funcionalidades al cierre)
+### Día 4 : Clientes, historial clínico, desbloqueo y privacidad (congelamiento de funcionalidades al cierre)
 
 **BE-12 [Franco, P0] Clientes (admin).** Búsqueda, alta asistida (RF01b; obligatorios nombre, apellido, documento, teléfono), edición, baja, y alta/edición de mascotas del cliente. Documento o email duplicado → 409 con el id de la ficha existente (RF24).
 *Aceptación:* **Dado** un documento existente, **cuando** el admin intenta crearlo de nuevo, **entonces** 409 y el mensaje incluye el nombre del cliente existente.
@@ -461,7 +458,7 @@ Reparto sugerido: **Franco → backend/BD**, **Gisella → frontend**. Cada día
 
 ---
 
-### Día 5 — Viernes 30/10: Verificación, datos de demostración y entrega
+### Día 5 — Verificación, datos de demostración y entrega
 
 **QA-01 [Ambos, P0] Checklist manual de aceptación:**
 - [ ] Registro con documento nuevo; registro vinculando una ficha `sin_cuenta`.
@@ -505,8 +502,4 @@ Componentes compartidos: `SelectorFranja` (usado por reserva, reprogramación y 
 
 Recordatorios por email 24 h antes (RF13), HTTPS/TLS y despliegue, backups automáticos, disponibilidad del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales.
 
-## 10. Plan de contingencia si el tiempo no alcanza
 
-1. Fin del día 3: si el flujo de turnos (BE-09 a FE-07) no está completo, **suspender el trabajo de P1** y dedicar el día 4 a completar y probar el P0.
-2. Prioridad de recorte, de menor a mayor impacto: FE-11 → BE-15 → BE-16 → FE-10/BE-14 → vista semanal de la agenda.
-3. **Nunca recortar:** control de concurrencia, autorización por rol, hash de contraseñas ni el bloqueo por intentos.
