@@ -8,12 +8,12 @@
 * **Integrantes:** Franco Tobar y Gisella Burgos
 * **Patrocinador / Cliente:** Docente de la Cátedra
 * **Fecha de Inicio:** 4 de Septiembre de 2026
-* **Fecha de Entrega Final:** 30 de Octubre de 2026 (**inamovible**)
-* **Tiempo restante al 26/10:** 5 días laborables (26, 27, 28, 29 y 30), contando el 26 como día de trabajo.
+* **Fecha de Entrega Final:** 4 de Noviembre de 2026 (**inamovible**)
+* **Tiempo restante al 26/10:** 8 días laborables (26, 27, 28, 29 y 30 de octubre; 2, 3 y 4 de noviembre), contando el 26 como día de trabajo.
 * **Repositorio de Código:** GitHub
 * **Gestor de Tareas:** Trello
 * **Stack Tecnológico:** JavaScript, React, Node.js (Express), MySQL
-* **Despliegue:** ninguno. Se desarrolla y se presenta de forma local.
+* **Despliegue:** frontend y backend en Render y base de datos en Aiven; todo puede evaluarse en local.
 
 ## 2. Project Charter (Acta de Constitución del Proyecto)
 
@@ -42,9 +42,10 @@ En el modelo operativo actual de la veterinaria (sin sistema digitalizado), los 
   * Módulo de administración: agenda, carga manual de turnos (teléfono/presencial), confirmación, estados, urgencias.
   * Gestión de servicios, feriados y horarios (franjas de 30 min, 09:00 a 19:00, lunes a viernes).
   * Historial clínico cargado por el administrador y consultado por el cliente (P1).
-* **Fuera del alcance:** rol Profesional con acceso al sistema, recordatorios por email, despliegue/hosting, facturación, pagos, Pet Shop, telemedicina e integraciones externas.
+  * Despliegue de frontend y backend en Render con base de datos en Aiven, además de la ejecución local.
+* **Fuera del alcance:** rol Profesional con acceso al sistema, recordatorios por email, facturación, pagos, Pet Shop, telemedicina e integraciones externas.
 * **Restricciones:**
-  * Límite de entrega estricto: 30 de Octubre.
+  * Límite de entrega estricto: 4 de Noviembre.
   * Equipo de 2 integrantes.
   * Sin corrección intermedia del docente: el trabajo se entrega finalizado y validado según definición interna.
   * Alcance limitado a un MVP priorizado (P0 / P1 / P2).
@@ -58,7 +59,7 @@ En el modelo operativo actual de la veterinaria (sin sistema digitalizado), los 
 
 ### 3.1. Marco Metodológico: Ágil adaptado (mini-sprints diarios)
 
-Con 5 días disponibles, se trabaja en un único sprint con cierre diario: cada día se define un objetivo, se integra a la rama principal y se verifica antes de pasar al siguiente. El día 5 es solo de verificación, datos de demostración y documentación; no se agregan funcionalidades nuevas.
+Con 8 días disponibles, se trabaja en un único sprint con cierre diario: cada día se define un objetivo, se integra a la rama principal y se verifica antes de pasar al siguiente. Al cerrar el desarrollo se congelan las funcionalidades: los últimos días son de verificación, datos de demostración y documentación, sin agregar funcionalidades nuevas.
 
 ### 3.2. Estructura y Flujo del Tablero en Trello
 
@@ -76,7 +77,7 @@ Con 5 días disponibles, se trabaja en un único sprint con cierre diario: cada 
 
 ### 4.1. Prototipado
 
-* No existe prototipo previo y el plazo no permite un prototipo de alta fidelidad en Figma. Se reemplaza por **bocetos rápidos de baja fidelidad** (papel o Figma básico) de las pantallas clave: login/registro, reserva de turno, mis turnos, agenda del administrador. El diseño visual se resuelve directamente en React con CSS simple.
+* No existe prototipo previo ni maquetas: no se usaron Figma, bocetos ni herramientas de diseño. El diseño visual se resolvió directamente en React con CSS propio, guiado por la especificación y el plan de desarrollo.
 
 ### 4.2. Desglose de Historias de Usuario
 
@@ -96,7 +97,7 @@ Con 5 días disponibles, se trabaja en un único sprint con cierre diario: cada 
 
 | Riesgo Técnico Identificado | Impacto | Plan de Mitigación Preventiva |
 | ----- | ----- | ----- |
-| Tiempo muy acotado (5 días, entrega inamovible) | Alto | Mantener el MVP estricto (P0 primero), congelar funcionalidades el día 4 y reservar el día 5 para verificación y presentación. |
+| Tiempo muy acotado (8 días, entrega inamovible) | Alto | Mantener el MVP estricto (P0 primero), congelar funcionalidades al cerrar el desarrollo y reservar los últimos días para verificación y presentación. |
 | Solapamiento de turnos por reservas simultáneas | Alto | Restricción única en MySQL sobre la franja activa y prueba automatizada de concurrencia antes de construir la UI de turnos. |
 | Falta de experiencia avanzada en alguna librería del stack | Medio | Pruebas de concepto aisladas y uso de librerías simples y conocidas. |
 | Dependencia de SMTP para desbloqueo/recordatorios | Bajo | Desbloqueo por administrador en P0; el email queda en P1 con envío simulado por consola. |
@@ -131,7 +132,7 @@ Cada módulo debe indicar: **responsabilidad principal**, **entradas** (props, p
 
 Este documento, junto con la *Especificación del proyecto* y el *Plan de Desarrollo MVP*, se entrega a una IA o a agentes de programación como **contexto primario de referencia**. Sirve para:
 
-1. Generar la hoja de ruta de los 5 días con las tareas exactas.
+1. Generar la hoja de ruta de los días de trabajo con las tareas exactas.
 2. Cargar en Trello las épicas, historias y tarjetas con sus criterios de aceptación.
 3. Generar el *boilerplate* de la arquitectura en 3 capas con Node.js y React.
 4. Escribir endpoints y componentes respetando el bajo acoplamiento y las restricciones del proyecto.

@@ -6,7 +6,7 @@
 
 ## 0. Reglas para el agente
 
-1. **Plazo:** entrega inamovible el viernes 30/10/2026. Hoy es lunes 26/10. Prioridad estricta: **P0 → P1**. Nada de P2.
+1. **Plazo:** entrega final el 04/11/2026. Prioridad estricta: **P0 → P1**. Nada de P2.
 2. **No agregar funcionalidades** que no estén en este plan. Ante una ambigüedad, elegir la opción más simple y anotarla en `docs/DECISIONES.md`.
 3. **Una tarea por vez.** Al terminar cada tarea: correr los tests existentes, verificar sus criterios de aceptación y hacer commit con el ID de la tarea (`feat(BE-05): ...`).
 4. **Capas:** rutas → controlador → servicio → base de datos. Las reglas de negocio viven **solo** en `service`. El frontend nunca decide reglas de negocio; solo las refleja.
@@ -36,13 +36,13 @@
 | Historial (P1) | Lo carga el admin; el cliente ve todo, solo lectura; inmutable + notas aclaratorias. |
 | Reclamo de ficha | Si el cliente se registra con un documento existente `sin_cuenta` **y el teléfono coincide**, se vincula la ficha. Si no coincide: 409 "Contactá a la veterinaria". |
 | Auditoría | `creado_por`, `modificado_por` y marcas de tiempo. |
-| Despliegue | Ninguno. Todo corre local. |
+| Despliegue | Frontend y backend en Render, base de datos en Aiven. Todo puede evaluarse en local. |
 
 ---
 
 ## 2. Stack y librerías
 
-* **Backend:** Node 20, Express 4, `mysql2/promise`, `bcryptjs`, `jsonwebtoken`, `cookie-parser`, `cors`, `helmet`, `express-rate-limit`, `zod`, `dayjs`, `dotenv`. Dev: `nodemon`, `jest`, `supertest`.
+* **Backend:** Node 20, Express 4, `mysql2/promise`, `bcryptjs`, `jsonwebtoken`, `cookie-parser`, `cors`, `helmet`, `zod`, `dotenv`. Dev: `nodemon`, `jest`, `supertest`.
 * **Frontend:** React + Vite, `react-router-dom`, `axios`, `dayjs`. CSS propio simple y responsive (sin librerías de UI).
 * **BD:** MySQL 8.
 * **Sesión:** JWT (8 h) en cookie `httpOnly`, `SameSite=Lax`. CORS con `credentials: true` solo para el origen del frontend.
@@ -69,11 +69,16 @@ TZ=America/Argentina/Buenos_Aires
 ## 3. Estructura del repositorio
 
 ```
-vetgestion/
+vetGestion/
+├─ AGENTS.md
 ├─ README.md
-├─ docs/DECISIONES.md
+├─ docs/
+│  ├─ DECISIONES.md
+│  ├─ especificacion_proyecto_veterinario.md
+│  ├─ plan_desarrollo_mvp_vetgestion.md
+│  └─ proyecto_vetgestion_documento_de_apuntes_y_especificacion.md
 ├─ backend/
-│  ├─ db/ schema.sql  seed.js
+│  ├─ db/ schema.sql  reset.js  seed.js
 │  ├─ src/
 │  │  ├─ app.js  server.js
 │  │  ├─ config/ env.js  db.js
@@ -86,14 +91,19 @@ vetgestion/
 │  │     ├─ servicios/
 │  │     ├─ feriados/
 │  │     ├─ turnos/
-│  │     └─ atenciones/  (P1)
-│  └─ tests/
+│  │     └─ atenciones/
+│  ├─ tests/  (*.test.js)
+│  ├─ .env.example
+│  └─ package.json
 └─ frontend/
-   └─ src/
-      ├─ api/ cliente.js (axios) y un archivo por módulo
-      ├─ context/ AuthContext.jsx
-      ├─ components/ Layout, NavBar, RutaProtegida, Campo, Modal, EstadoBadge, SelectorFranja
-      └─ pages/ publicas/  cliente/  admin/
+   ├─ src/
+   │  ├─ api/ cliente.js (axios) y un archivo por módulo
+   │  ├─ context/ AuthContext.jsx
+   │  ├─ components/ Layout, NavBar, RutaProtegida, Campo, Modal, EstadoBadge, SelectorFranja, FormMascota, DetalleAtencion
+   │  ├─ pages/ publicas/  cliente/  admin/
+   │  └─ App.jsx  main.jsx  styles.css
+   ├─ vite.config.js
+   └─ package.json
 ```
 
 ---
@@ -241,7 +251,7 @@ DELIMITER ;
 El script debe hashear contraseñas con bcrypt (no usar hashes escritos a mano):
 * Admin: documento `00000000`, contraseña `Admin12`, `rol='admin'`, `estado_cuenta='con_cuenta'`.
 * Servicios: Consulta general, Vacunación, Control de peso, Desparasitación, Castración (consulta).
-* Feriados de ejemplo: `2026-12-08` (Inmaculada Concepción), `2026-12-25` (Navidad). *Verificar contra el calendario oficial antes de la presentación.*
+* Feriados de ejemplo: `2026-12-08` (Inmaculada Concepción), `2026-12-25` (Navidad).
 * Demo: 2 clientes con cuenta (contraseña `Demo12`), 1 cliente `sin_cuenta` sin email, 3 mascotas, y algunos turnos de ejemplo (incluyendo pasados en estado `atendido`, insertados directamente por SQL).
 
 ---
@@ -316,6 +326,7 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 
 | Método y ruta | Rol | Descripción | Prio |
 | --- | --- | --- | --- |
+| GET `/salud` | P | Salud del sistema (chequea la conexión a la base) | P0 |
 | POST `/auth/registro` | P | Registro de cliente (RF01a) | P0 |
 | POST `/auth/login` | P | Login | P0 |
 | POST `/auth/logout` | C/A | Cierra sesión (borra cookie) | P0 |
@@ -356,6 +367,7 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 
 ---
 
+## 7. Cronograma de tareas
 
 ### Día 1 — Base, autenticación y contrato de API
 
@@ -430,9 +442,9 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 
 ---
 
-### Día 4 : Clientes, historial clínico, desbloqueo y privacidad (congelamiento de funcionalidades al cierre)
+### Día 4 — Clientes, historial clínico, desbloqueo y privacidad (congelamiento de funcionalidades al cierre)
 
-**BE-12 [Franco, P0] Clientes (admin).** Búsqueda, alta asistida (RF01b; obligatorios nombre, apellido, documento, teléfono), edición, baja, y alta/edición de mascotas del cliente. Documento o email duplicado → 409 con el id de la ficha existente (RF24).
+**BE-12 [Franco, P0] Clientes (admin).** Búsqueda, alta asistida (RF01b; obligatorios nombre, apellido, documento, teléfono), edición, baja, y alta/edición de mascotas del cliente. Documento o email duplicado → 409 informando el nombre del cliente existente (RF24; la respuesta no incluye el id de la ficha).
 *Aceptación:* **Dado** un documento existente, **cuando** el admin intenta crearlo de nuevo, **entonces** 409 y el mensaje incluye el nombre del cliente existente.
 
 **BE-13 [Franco, P0] Desbloqueo por admin.** `POST /admin/clientes/:id/desbloquear`.
@@ -458,33 +470,11 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 
 ---
 
-### Día 5 — Verificación, datos de demostración y entrega
-
-**QA-01 [Ambos, P0] Checklist manual de aceptación:**
-- [ ] Registro con documento nuevo; registro vinculando una ficha `sin_cuenta`.
-- [ ] Contraseñas inválidas rechazadas; 5 intentos fallidos bloquean; el admin desbloquea.
-- [ ] Cliente: alta de mascota, reserva, cancelación (≥ 24 h) y rechazo (< 24 h), reprogramación.
-- [ ] Dos navegadores reservando la misma franja: solo uno lo logra.
-- [ ] Admin: confirmar, turno telefónico, cambio de estado, urgencia con aviso de contacto.
-- [ ] No se ofrecen franjas en feriados, fines de semana, pasado ni fuera de 09:00–19:00.
-- [ ] Un cliente no accede a `/admin/*` ni a mascotas ajenas (probar editando la URL).
-- [ ] (P1) Atención → nota aclaratoria → el cliente ve el historial; mascota sin registros muestra "Sin atenciones".
-- [ ] Responsive en móvil (ancho 375 px) para login, reserva y mis turnos.
-
-**QA-02 [Franco, P0] Tests automatizados:** `npm test` en verde (fechas, auth, autorización, concurrencia, antelación, transiciones).
-
-**DOC-01 [Gisella, P0] README:** requisitos (Node 20, MySQL 8), pasos de instalación (`schema.sql`, `npm run seed`, `npm run dev` en ambos proyectos), credenciales de demo, tabla de endpoints, comando de respaldo y lista de trabajo futuro.
-
-**DOC-02 [Ambos, P0] Guion de demostración (10 minutos):** (1) el problema de la sala de espera, (2) cliente se registra y reserva, (3) admin confirma y carga un turno telefónico, (4) conflicto de concurrencia, (5) urgencia, (6) historial clínico (si está hecho), (7) trabajo futuro.
-
-**Cierre:** `main` etiquetado como `v1.0-entrega`, base de datos reseteada con seed de demo y ensayo de la presentación.
-
----
-
 ## 8. Estructura de pantallas y rutas (frontend)
 
 | Ruta | Rol | Pantalla |
 | --- | --- | --- |
+| `/` | P | Inicio pública (presentación y contacto) |
 | `/login`, `/registro` | P | Acceso y alta |
 | `/recuperar`, `/restablecer` | P | (P1) |
 | `/mascotas`, `/mascotas/nueva`, `/mascotas/:id` | C | Mis mascotas, ficha e historial |
@@ -500,6 +490,6 @@ Componentes compartidos: `SelectorFranja` (usado por reserva, reprogramación y 
 
 ## 9. Fuera del MVP (documentar como trabajo futuro)
 
-Recordatorios por email 24 h antes (RF13), HTTPS/TLS y despliegue, backups automáticos, disponibilidad del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales.
+Recordatorios por email 24 h antes (RF13), backups automáticos, disponibilidad garantizada del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales. Quedan también como trabajo futuro la baja de mascota realizada por el administrador (RF20), la edición de perfil propio por el cliente (RNF04) y el id de la ficha existente en la respuesta de duplicado (RF24).
 
 
