@@ -84,10 +84,12 @@ async function leerTurno(id) {
 // por cada UPDATE del servicio.
 function forzarVentana(sqlCompetencia, paramsCompetencia) {
   const original = pool.execute.bind(pool);
+  const obtenerConexionOriginal = pool.getConnection.bind(pool);
   const registro = { filasAfectadas: [] };
   let disparada = false;
-  const espia = jest.spyOn(pool, 'execute').mockImplementation(async (sql, params) => {
-    const resultado = await original(sql, params);
+
+  async function observar(ejecutar, sql, params) {
+    const resultado = await ejecutar(sql, params);
     if (/^\s*UPDATE turnos/i.test(sql)) {
       registro.filasAfectadas.push(resultado[0].affectedRows);
     }
@@ -96,8 +98,27 @@ function forzarVentana(sqlCompetencia, paramsCompetencia) {
       await original(sqlCompetencia, paramsCompetencia);
     }
     return resultado;
+  }
+
+  // Las operaciones con transacción (reprogramaciones) ejecutan sus UPDATE
+  // sobre una conexión propia: también se observa esa conexión.
+  const espiaExecute = jest
+    .spyOn(pool, 'execute')
+    .mockImplementation((sql, params) => observar(original, sql, params));
+  const espiaConexion = jest.spyOn(pool, 'getConnection').mockImplementation(async () => {
+    const conn = await obtenerConexionOriginal();
+    const executeOriginal = conn.execute.bind(conn);
+    conn.execute = (sql, params) => observar(executeOriginal, sql, params);
+    return conn;
   });
-  return { registro, restaurar: () => espia.mockRestore() };
+
+  return {
+    registro,
+    restaurar: () => {
+      espiaExecute.mockRestore();
+      espiaConexion.mockRestore();
+    },
+  };
 }
 
 beforeAll(async () => {

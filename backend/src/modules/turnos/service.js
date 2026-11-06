@@ -30,6 +30,33 @@ function verificarEstadoVigente(resultado) {
   }
 }
 
+// Ejecuta fn dentro de una transacción. Las reservas y reprogramaciones bloquean
+// primero la fila de la mascota (SELECT ... FOR UPDATE), revalidan y escriben.
+// La baja de mascota bloquea esa misma fila antes de cancelar los turnos
+// futuros, así que el orden es siempre mascota → turnos (sin deadlock).
+// ER_DUP_ENTRY (índice único de franja) → 409 FRANJA_OCUPADA.
+async function enTransaccion(fn, mensajeFranjaOcupada) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const resultado = await fn(conn);
+    await conn.commit();
+    return resultado;
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch (_) {
+      // El error original prevalece.
+    }
+    if (err.code === 'ER_DUP_ENTRY') {
+      throw new ApiError(409, 'FRANJA_OCUPADA', mensajeFranjaOcupada);
+    }
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
 // Disponibilidad del día (sección 5 del plan):
 // 1. Día sin atención (no laborable, feriado o fecha pasada) → [].
 // 2. Franjas ocupadas: turnos del día con estado <> 'cancelado'.
@@ -129,40 +156,37 @@ async function crearComoCliente(
   { mascota_id, servicio_id, fecha, hora },
   ahora = new Date()
 ) {
-  const [[mascota]] = await pool.execute(
-    'SELECT id, activa FROM mascotas WHERE id = ? AND usuario_id = ?',
-    [mascota_id, usuarioId]
-  );
-  if (!mascota) {
-    throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe');
-  }
-  if (!mascota.activa) {
-    throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
-  }
+  const turnoId = await enTransaccion(async (conn) => {
+    const [[mascota]] = await conn.execute(
+      'SELECT id, activa FROM mascotas WHERE id = ? AND usuario_id = ? FOR UPDATE',
+      [mascota_id, usuarioId]
+    );
+    if (!mascota) {
+      throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe');
+    }
+    if (!mascota.activa) {
+      throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
+    }
 
-  const [[servicio]] = await pool.execute('SELECT id FROM servicios WHERE id = ? AND activo = 1', [
-    servicio_id,
-  ]);
-  if (!servicio) {
-    throw new ApiError(404, 'NO_ENCONTRADO', 'El servicio no existe');
-  }
+    const [[servicio]] = await conn.execute('SELECT id FROM servicios WHERE id = ? AND activo = 1', [
+      servicio_id,
+    ]);
+    if (!servicio) {
+      throw new ApiError(404, 'NO_ENCONTRADO', 'El servicio no existe');
+    }
 
-  const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
-  validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+    const [filasFeriados] = await conn.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+    validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
 
-  try {
-    const [alta] = await pool.execute(
+    const [alta] = await conn.execute(
       `INSERT INTO turnos (usuario_id, mascota_id, servicio_id, fecha_hora, estado, canal, creado_por)
        VALUES (?, ?, ?, ?, 'pendiente', 'web', ?)`,
       [usuarioId, mascota_id, servicio_id, `${fecha} ${hora}:00`, usuarioId]
     );
-    return obtenerTurno(alta.insertId);
-  } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
-    }
-    throw err;
-  }
+    return alta.insertId;
+  }, 'Esa franja acaba de ser reservada, elegí otra');
+
+  return obtenerTurno(turnoId);
 }
 
 // Cancelación de turno por el cliente (sección 5 del plan):
@@ -217,7 +241,7 @@ async function reprogramarComoCliente(
   ahora = new Date()
 ) {
   const [[turno]] = await pool.execute(
-    `SELECT t.id, t.usuario_id, t.fecha_hora, t.estado, m.activa AS mascota_activa
+    `SELECT t.id, t.usuario_id, t.mascota_id, t.fecha_hora, t.estado, m.activa AS mascota_activa
        FROM turnos t
        JOIN mascotas m ON m.id = t.mascota_id
       WHERE t.id = ? AND t.usuario_id = ?`,
@@ -248,22 +272,25 @@ async function reprogramarComoCliente(
     );
   }
 
-  const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
-  validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+  await enTransaccion(async (conn) => {
+    const [[mascota]] = await conn.execute('SELECT activa FROM mascotas WHERE id = ? FOR UPDATE', [
+      turno.mascota_id,
+    ]);
+    if (!mascota.activa) {
+      throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
+    }
 
-  try {
-    const [resultado] = await pool.execute(
+    const [filasFeriados] = await conn.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+    validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+
+    const [resultado] = await conn.execute(
       'UPDATE turnos SET fecha_hora = ?, estado = ?, modificado_por = ? WHERE id = ? AND estado = ?',
       [`${fecha} ${hora}:00`, 'pendiente', usuarioId, turnoId, turno.estado]
     );
     verificarEstadoVigente(resultado);
-    return obtenerTurno(turnoId);
-  } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
-    }
-    throw err;
-  }
+  }, 'Esa franja acaba de ser reservada, elegí otra');
+
+  return obtenerTurno(turnoId);
 }
 
 // GET /admin/turnos?desde=&hasta=&estado= (admin, sección 6 y 7 BE-10)
@@ -325,40 +352,37 @@ async function crearComoAdmin(
     throw new ApiError(404, 'NO_ENCONTRADO', 'El cliente no existe');
   }
 
-  const [[mascota]] = await pool.execute(
-    'SELECT id, activa FROM mascotas WHERE id = ? AND usuario_id = ?',
-    [mascota_id, usuario_id]
-  );
-  if (!mascota) {
-    throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe o no pertenece al cliente');
-  }
-  if (!mascota.activa) {
-    throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
-  }
+  const turnoId = await enTransaccion(async (conn) => {
+    const [[mascota]] = await conn.execute(
+      'SELECT id, activa FROM mascotas WHERE id = ? AND usuario_id = ? FOR UPDATE',
+      [mascota_id, usuario_id]
+    );
+    if (!mascota) {
+      throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe o no pertenece al cliente');
+    }
+    if (!mascota.activa) {
+      throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
+    }
 
-  const [[servicio]] = await pool.execute('SELECT id FROM servicios WHERE id = ? AND activo = 1', [
-    servicio_id,
-  ]);
-  if (!servicio) {
-    throw new ApiError(404, 'NO_ENCONTRADO', 'El servicio no existe o no está activo');
-  }
+    const [[servicio]] = await conn.execute('SELECT id FROM servicios WHERE id = ? AND activo = 1', [
+      servicio_id,
+    ]);
+    if (!servicio) {
+      throw new ApiError(404, 'NO_ENCONTRADO', 'El servicio no existe o no está activo');
+    }
 
-  const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
-  validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+    const [filasFeriados] = await conn.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+    validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
 
-  try {
-    const [alta] = await pool.execute(
+    const [alta] = await conn.execute(
       `INSERT INTO turnos (usuario_id, mascota_id, servicio_id, fecha_hora, estado, canal, creado_por)
        VALUES (?, ?, ?, ?, 'confirmado', ?, ?)`,
       [usuario_id, mascota_id, servicio_id, `${fecha} ${hora}:00`, canal, adminId]
     );
-    return obtenerTurno(alta.insertId);
-  } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja ya fue reservada');
-    }
-    throw err;
-  }
+    return alta.insertId;
+  }, 'Esa franja ya fue reservada');
+
+  return obtenerTurno(turnoId);
 }
 
 // Mapa de transiciones válidas de turnos (sección 5 del plan y RF21)
@@ -404,7 +428,7 @@ async function reprogramarComoAdmin(
   ahora = new Date()
 ) {
   const [[turno]] = await pool.execute(
-    `SELECT t.id, t.fecha_hora, t.estado, m.activa AS mascota_activa
+    `SELECT t.id, t.mascota_id, t.fecha_hora, t.estado, m.activa AS mascota_activa
        FROM turnos t
        JOIN mascotas m ON m.id = t.mascota_id
       WHERE t.id = ?`,
@@ -426,22 +450,25 @@ async function reprogramarComoAdmin(
     throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
   }
 
-  const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
-  validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+  await enTransaccion(async (conn) => {
+    const [[mascota]] = await conn.execute('SELECT activa FROM mascotas WHERE id = ? FOR UPDATE', [
+      turno.mascota_id,
+    ]);
+    if (!mascota.activa) {
+      throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
+    }
 
-  try {
-    const [resultado] = await pool.execute(
+    const [filasFeriados] = await conn.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+    validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+
+    const [resultado] = await conn.execute(
       'UPDATE turnos SET fecha_hora = ?, modificado_por = ? WHERE id = ? AND estado = ?',
       [`${fecha} ${hora}:00`, adminId, turnoId, turno.estado]
     );
     verificarEstadoVigente(resultado);
-    return obtenerTurno(turnoId);
-  } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
-    }
-    throw err;
-  }
+  }, 'Esa franja acaba de ser reservada, elegí otra');
+
+  return obtenerTurno(turnoId);
 }
 
 // POST /admin/turnos/:id/urgencia (admin, RF25, BE-11)
@@ -457,7 +484,7 @@ async function urgencia(
   ahora = new Date()
 ) {
   const [[turno]] = await pool.execute(
-    `SELECT t.id, t.usuario_id, t.fecha_hora, t.estado, m.activa AS mascota_activa,
+    `SELECT t.id, t.usuario_id, t.mascota_id, t.fecha_hora, t.estado, m.activa AS mascota_activa,
             u.nombre, u.apellido, u.telefono, u.email
        FROM turnos t
        JOIN usuarios u ON u.id = t.usuario_id
@@ -492,11 +519,18 @@ async function urgencia(
     if (!turno.mascota_activa) {
       throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
     }
-    const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
-    validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+    await enTransaccion(async (conn) => {
+      const [[mascota]] = await conn.execute('SELECT activa FROM mascotas WHERE id = ? FOR UPDATE', [
+        turno.mascota_id,
+      ]);
+      if (!mascota.activa) {
+        throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
+      }
 
-    try {
-      const [resultado] = await pool.execute(
+      const [filasFeriados] = await conn.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
+      validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
+
+      const [resultado] = await conn.execute(
         `UPDATE turnos
             SET fecha_hora = ?,
                 es_urgencia = 1,
@@ -506,12 +540,7 @@ async function urgencia(
         [`${fecha} ${hora}:00`, motivo, adminId, turnoId, turno.estado]
       );
       verificarEstadoVigente(resultado);
-    } catch (err) {
-      if (err.code === 'ER_DUP_ENTRY') {
-        throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
-      }
-      throw err;
-    }
+    }, 'Esa franja acaba de ser reservada, elegí otra');
   } else {
     throw new ApiError(400, 'DATOS_INVALIDOS', 'Acción no válida');
   }
