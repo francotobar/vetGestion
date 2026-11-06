@@ -17,6 +17,19 @@ function aFechaLocal(fecha) {
   return `${anio}-${mes}-${dia}`;
 }
 
+// Actualización condicionada por estado: el UPDATE solo aplica si el turno sigue
+// en el estado que se validó al leerlo. Si otra operación lo cambió entre la
+// lectura y la escritura, no se modifica nada (0 filas) y se responde 409.
+function verificarEstadoVigente(resultado) {
+  if (resultado.affectedRows === 0) {
+    throw new ApiError(
+      409,
+      'CONFLICTO_ESTADO',
+      'El turno cambió mientras lo editabas. Recargá la pantalla y volvé a intentar'
+    );
+  }
+}
+
 // Disponibilidad del día (sección 5 del plan):
 // 1. Día sin atención (no laborable, feriado o fecha pasada) → [].
 // 2. Franjas ocupadas: turnos del día con estado <> 'cancelado'.
@@ -183,10 +196,11 @@ async function cancelarComoCliente(usuarioId, turnoId, ahora = new Date()) {
     );
   }
 
-  await pool.execute(
-    'UPDATE turnos SET estado = ?, modificado_por = ? WHERE id = ?',
-    ['cancelado', usuarioId, turnoId]
+  const [resultado] = await pool.execute(
+    'UPDATE turnos SET estado = ?, modificado_por = ? WHERE id = ? AND estado = ?',
+    ['cancelado', usuarioId, turnoId, turno.estado]
   );
+  verificarEstadoVigente(resultado);
 
   return obtenerTurno(turnoId);
 }
@@ -238,10 +252,11 @@ async function reprogramarComoCliente(
   validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
 
   try {
-    await pool.execute(
-      'UPDATE turnos SET fecha_hora = ?, estado = ?, modificado_por = ? WHERE id = ?',
-      [`${fecha} ${hora}:00`, 'pendiente', usuarioId, turnoId]
+    const [resultado] = await pool.execute(
+      'UPDATE turnos SET fecha_hora = ?, estado = ?, modificado_por = ? WHERE id = ? AND estado = ?',
+      [`${fecha} ${hora}:00`, 'pendiente', usuarioId, turnoId, turno.estado]
     );
+    verificarEstadoVigente(resultado);
     return obtenerTurno(turnoId);
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -371,10 +386,11 @@ async function cambiarEstado(adminId, turnoId, nuevoEstado) {
     );
   }
 
-  await pool.execute(
-    'UPDATE turnos SET estado = ?, modificado_por = ? WHERE id = ?',
-    [nuevoEstado, adminId, turnoId]
+  const [resultado] = await pool.execute(
+    'UPDATE turnos SET estado = ?, modificado_por = ? WHERE id = ? AND estado = ?',
+    [nuevoEstado, adminId, turnoId, turno.estado]
   );
+  verificarEstadoVigente(resultado);
 
   return obtenerTurno(turnoId);
 }
@@ -414,10 +430,11 @@ async function reprogramarComoAdmin(
   validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
 
   try {
-    await pool.execute(
-      'UPDATE turnos SET fecha_hora = ?, modificado_por = ? WHERE id = ?',
-      [`${fecha} ${hora}:00`, adminId, turnoId]
+    const [resultado] = await pool.execute(
+      'UPDATE turnos SET fecha_hora = ?, modificado_por = ? WHERE id = ? AND estado = ?',
+      [`${fecha} ${hora}:00`, adminId, turnoId, turno.estado]
     );
+    verificarEstadoVigente(resultado);
     return obtenerTurno(turnoId);
   } catch (err) {
     if (err.code === 'ER_DUP_ENTRY') {
@@ -461,15 +478,16 @@ async function urgencia(
   }
 
   if (accion === 'cancelar') {
-    await pool.execute(
+    const [resultado] = await pool.execute(
       `UPDATE turnos
           SET estado = 'cancelado',
               es_urgencia = 1,
               motivo = ?,
               modificado_por = ?
-        WHERE id = ?`,
-      [motivo, adminId, turnoId]
+        WHERE id = ? AND estado = ?`,
+      [motivo, adminId, turnoId, turno.estado]
     );
+    verificarEstadoVigente(resultado);
   } else if (accion === 'reprogramar') {
     if (!turno.mascota_activa) {
       throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
@@ -478,15 +496,16 @@ async function urgencia(
     validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
 
     try {
-      await pool.execute(
+      const [resultado] = await pool.execute(
         `UPDATE turnos
             SET fecha_hora = ?,
                 es_urgencia = 1,
                 motivo = ?,
                 modificado_por = ?
-          WHERE id = ?`,
-        [`${fecha} ${hora}:00`, motivo, adminId, turnoId]
+          WHERE id = ? AND estado = ?`,
+        [`${fecha} ${hora}:00`, motivo, adminId, turnoId, turno.estado]
       );
+      verificarEstadoVigente(resultado);
     } catch (err) {
       if (err.code === 'ER_DUP_ENTRY') {
         throw new ApiError(409, 'FRANJA_OCUPADA', 'Esa franja acaba de ser reservada, elegí otra');
