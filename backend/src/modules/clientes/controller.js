@@ -107,6 +107,17 @@ async function actualizarMascotaAdmin(req, res, next) {
   }
 }
 
+// DELETE /admin/mascotas/:id
+async function darDeBajaMascotaAdmin(req, res, next) {
+  try {
+    const id = parsearId(req);
+    if (!id) throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe');
+    res.json(await servicio.darDeBajaMascotaAdmin(req.usuario.id, id));
+  } catch (err) {
+    next(err);
+  }
+}
+
 // POST /admin/clientes/:id/desbloquear (BE-13)
 async function desbloquearCliente(req, res, next) {
   try {
@@ -142,4 +153,5 @@ module.exports = {
   listarMascotasCliente,
   crearMascotaCliente,
   actualizarMascotaAdmin,
+  darDeBajaMascotaAdmin,
 };

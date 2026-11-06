@@ -1,6 +1,8 @@
 const { pool } = require('../../config/db');
 const { ApiError } = require('../../utils/errores');
 const authService = require('../auth/service');
+const { darDeBajaMascota } = require('../mascotas/service');
+const { cancelarTurnosFuturos } = require('../turnos/service');
 
 // Mapeo público de cliente para admin (sección 4 y 6).
 function mapearCliente(fila) {
@@ -301,6 +303,12 @@ async function actualizarMascotaAdmin(adminId, mascotaId, datos) {
   return mapearMascota(actualizada);
 }
 
+// DELETE /admin/mascotas/:id: baja lógica de cualquier mascota, con la misma
+// lógica de turnos futuros que la baja del cliente.
+async function darDeBajaMascotaAdmin(adminId, mascotaId) {
+  return darDeBajaMascota(mascotaId, { modificadoPor: adminId });
+}
+
 // POST /admin/clientes/:id/desbloquear (BE-13)
 async function desbloquearCliente(adminId, clienteId, datos) {
   return authService.desbloquearPorAdmin(adminId, clienteId, datos);
@@ -351,13 +359,10 @@ async function anonimizarCliente(adminId, clienteId) {
 
     // 3. Turnos futuros (pendiente/confirmado) del cliente: se cancelan.
     //    Los turnos ya atendidos/ausentes/cancelados no se tocan.
-    await conn.execute(
-      `UPDATE turnos
-         SET estado = 'cancelado', modificado_por = ?
-       WHERE usuario_id = ?
-         AND estado IN ('pendiente', 'confirmado')
-         AND fecha_hora > ?`,
-      [adminId, clienteId, ahora]
+    await cancelarTurnosFuturos(
+      conn,
+      { usuarioId: clienteId },
+      { modificadoPor: adminId, motivo: 'Anonimización del cliente', ahora }
     );
 
     await conn.commit();
@@ -385,4 +390,5 @@ module.exports = {
   listarMascotasCliente,
   crearMascotaCliente,
   actualizarMascotaAdmin,
+  darDeBajaMascotaAdmin,
 };

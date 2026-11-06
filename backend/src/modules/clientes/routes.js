@@ -24,11 +24,12 @@ routerAdminClientes.get('/:id/mascotas', controlador.listarMascotasCliente);
 routerAdminClientes.post('/:id/mascotas', validar(mascotaSchema), controlador.crearMascotaCliente);
 
 // Router para /api/admin/mascotas (sección 6 del plan, BE-12):
-// Edición de mascota por admin: PUT /api/admin/mascotas/:id
+// Edición y baja de mascota por admin: PUT y DELETE /api/admin/mascotas/:id
 const routerAdminMascotas = express.Router();
 routerAdminMascotas.use(auth, roles('admin'));
 
 routerAdminMascotas.put('/:id', validar(mascotaSchema), controlador.actualizarMascotaAdmin);
+routerAdminMascotas.delete('/:id', controlador.darDeBajaMascotaAdmin);
 routerAdminMascotas.get('/:id/historial', auth, roles('admin'), controladorAtenciones.historial);
 
 module.exports = {

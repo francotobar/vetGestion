@@ -69,6 +69,19 @@ export function mascotasDelCliente(id) {
   }));
 }
 
+// Baja lógica de una mascota (DELETE /admin/mascotas/:id): la mascota queda
+// inactiva y sus turnos futuros pendientes o confirmados se cancelan. Responde
+// { mensaje, turnosCancelados }. 404 si la mascota no existe o ya está dada de baja.
+export function darDeBajaMascota(id) {
+  return api.delete(`/admin/mascotas/${id}`).then((respuesta) => ({
+    ...respuesta,
+    data: {
+      mensaje: respuesta.data.mensaje,
+      turnosCancelados: respuesta.data.turnos_cancelados,
+    },
+  }));
+}
+
 // Alta de una mascota para el cliente (POST /admin/clientes/:id/mascotas).
 // Mismos campos y validación que la ficha de mascota (RF06, mascotaSchema).
 export function crearMascota(clienteId, datos) {

@@ -84,8 +84,26 @@ async function misTurnos(usuarioId) {
   return turnos;
 }
 
+// Cancela los turnos futuros (pendiente o confirmado) de una mascota o de un
+// cliente, dentro de la transacción conn. Los turnos pasados no se tocan.
+// Devuelve cuántos turnos se cancelaron. Lo usan la baja de mascota (cliente y
+// admin) y la anonimización del cliente.
+async function cancelarTurnosFuturos(conn, { mascotaId, usuarioId }, { modificadoPor, motivo, ahora = new Date() }) {
+  const porMascota = mascotaId !== undefined;
+  const [resultado] = await conn.execute(
+    `UPDATE turnos
+        SET estado = 'cancelado', motivo = ?, modificado_por = ?
+      WHERE ${porMascota ? 'mascota_id' : 'usuario_id'} = ?
+        AND estado IN ('pendiente', 'confirmado')
+        AND fecha_hora > ?`,
+    [motivo, modificadoPor, porMascota ? mascotaId : usuarioId, ahora]
+  );
+  return resultado.affectedRows;
+}
+
 // Reserva del cliente (sección 5):
-// 1. La mascota pertenece al usuario y está activa; si no → 404.
+// 1. La mascota pertenece al usuario; si no existe o es ajena → 404.
+//    Si está dada de baja (activa = 0) → 422 MASCOTA_INACTIVA.
 // 2. El servicio existe y está activo; si no → 404.
 // 3. validarFranja(...) → 422 FRANJA_INVALIDA si no corresponde.
 // 4. INSERT pendiente / web.
@@ -99,11 +117,14 @@ async function crearComoCliente(
   ahora = new Date()
 ) {
   const [[mascota]] = await pool.execute(
-    'SELECT id FROM mascotas WHERE id = ? AND usuario_id = ? AND activa = 1',
+    'SELECT id, activa FROM mascotas WHERE id = ? AND usuario_id = ?',
     [mascota_id, usuarioId]
   );
   if (!mascota) {
     throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe');
+  }
+  if (!mascota.activa) {
+    throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
   }
 
   const [[servicio]] = await pool.execute('SELECT id FROM servicios WHERE id = ? AND activo = 1', [
@@ -182,7 +203,10 @@ async function reprogramarComoCliente(
   ahora = new Date()
 ) {
   const [[turno]] = await pool.execute(
-    'SELECT id, usuario_id, fecha_hora, estado FROM turnos WHERE id = ? AND usuario_id = ?',
+    `SELECT t.id, t.usuario_id, t.fecha_hora, t.estado, m.activa AS mascota_activa
+       FROM turnos t
+       JOIN mascotas m ON m.id = t.mascota_id
+      WHERE t.id = ? AND t.usuario_id = ?`,
     [turnoId, usuarioId]
   );
   if (!turno) {
@@ -195,6 +219,10 @@ async function reprogramarComoCliente(
       'TRANSICION_INVALIDA',
       `No se puede reprogramar un turno en estado "${turno.estado}"`
     );
+  }
+
+  if (!turno.mascota_activa) {
+    throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
   }
 
   const horas = horasHasta(turno.fecha_hora, ahora);
@@ -283,11 +311,14 @@ async function crearComoAdmin(
   }
 
   const [[mascota]] = await pool.execute(
-    'SELECT id FROM mascotas WHERE id = ? AND usuario_id = ? AND activa = 1',
+    'SELECT id, activa FROM mascotas WHERE id = ? AND usuario_id = ?',
     [mascota_id, usuario_id]
   );
   if (!mascota) {
     throw new ApiError(404, 'NO_ENCONTRADO', 'La mascota no existe o no pertenece al cliente');
+  }
+  if (!mascota.activa) {
+    throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
   }
 
   const [[servicio]] = await pool.execute('SELECT id FROM servicios WHERE id = ? AND activo = 1', [
@@ -357,7 +388,10 @@ async function reprogramarComoAdmin(
   ahora = new Date()
 ) {
   const [[turno]] = await pool.execute(
-    'SELECT id, fecha_hora, estado FROM turnos WHERE id = ?',
+    `SELECT t.id, t.fecha_hora, t.estado, m.activa AS mascota_activa
+       FROM turnos t
+       JOIN mascotas m ON m.id = t.mascota_id
+      WHERE t.id = ?`,
     [turnoId]
   );
   if (!turno) {
@@ -370,6 +404,10 @@ async function reprogramarComoAdmin(
       'TRANSICION_INVALIDA',
       `No se puede reprogramar un turno en estado "${turno.estado}"`
     );
+  }
+
+  if (!turno.mascota_activa) {
+    throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
   }
 
   const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
@@ -402,10 +440,11 @@ async function urgencia(
   ahora = new Date()
 ) {
   const [[turno]] = await pool.execute(
-    `SELECT t.id, t.usuario_id, t.fecha_hora, t.estado,
+    `SELECT t.id, t.usuario_id, t.fecha_hora, t.estado, m.activa AS mascota_activa,
             u.nombre, u.apellido, u.telefono, u.email
        FROM turnos t
        JOIN usuarios u ON u.id = t.usuario_id
+       JOIN mascotas m ON m.id = t.mascota_id
       WHERE t.id = ?`,
     [turnoId]
   );
@@ -432,6 +471,9 @@ async function urgencia(
       [motivo, adminId, turnoId]
     );
   } else if (accion === 'reprogramar') {
+    if (!turno.mascota_activa) {
+      throw new ApiError(422, 'MASCOTA_INACTIVA', 'La mascota está dada de baja y no puede recibir turnos');
+    }
     const [filasFeriados] = await pool.execute('SELECT fecha FROM feriados WHERE fecha = ?', [fecha]);
     validarFranja(fecha, hora, { feriados: filasFeriados.map((f) => f.fecha), ahora });
 
@@ -478,4 +520,5 @@ module.exports = {
   cambiarEstado,
   reprogramarComoAdmin,
   urgencia,
+  cancelarTurnosFuturos,
 };

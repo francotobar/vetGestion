@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { desbloquear, anonimizar, mascotasDelCliente, obtener } from '../../api/adminClientes.js';
+import {
+  anonimizar,
+  darDeBajaMascota,
+  desbloquear,
+  mascotasDelCliente,
+  obtener,
+} from '../../api/adminClientes.js';
 import { agenda } from '../../api/adminTurnos.js';
 import { mensajeDeError } from '../../api/cliente.js';
 import Campo from '../../components/Campo.jsx';
@@ -37,6 +43,15 @@ function etiquetaCuenta(cliente) {
 
 function mayuscula(texto) {
   return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : '';
+}
+
+function mensajeBajaMascota(mascota, cantidadFuturos) {
+  const base = `${mascota.nombre} dejará de aparecer en la ficha y no podrá recibir nuevas reservas. Su historial se conserva y los turnos pasados no se modifican.`;
+  if (cantidadFuturos === 0) {
+    return `${base} No tiene turnos futuros para cancelar.`;
+  }
+  const turnos = cantidadFuturos === 1 ? '1 turno futuro' : `${cantidadFuturos} turnos futuros`;
+  return `${base} Se cancelarán ${turnos} y las franjas quedarán libres.`;
 }
 
 function TarjetaTurno({ turno }) {
@@ -77,6 +92,11 @@ export default function ClienteFicha() {
   const [modalAnonimizar, setModalAnonimizar] = useState(false);
   const [errorAnonimizar, setErrorAnonimizar] = useState('');
   const [anonimizando, setAnonimizando] = useState(false);
+
+  // Baja de mascota: confirmación con la cantidad de turnos futuros que se cancelan.
+  const [mascotaABaja, setMascotaABaja] = useState(null);
+  const [errorBaja, setErrorBaja] = useState('');
+  const [dandoBaja, setDandoBaja] = useState(false);
 
   // Ficha del cliente; si falla (por ejemplo 404) se muestra la página de
   // error. Las mascotas y los turnos se cargan aparte para que un fallo en
@@ -165,6 +185,56 @@ export default function ClienteFicha() {
       }
     } finally {
       setAnonimizando(false);
+    }
+  }
+
+  // Turnos futuros pendientes o confirmados de una mascota, según los turnos ya
+  // cargados en la ficha (cubren todo el plazo de reserva).
+  function turnosFuturosDe(mascotaId) {
+    return (turnos || []).filter(
+      (t) =>
+        t.mascotaId === mascotaId &&
+        ['pendiente', 'confirmado'].includes(t.estado) &&
+        dayjs(t.fechaHora).isAfter(dayjs())
+    );
+  }
+
+  function abrirBajaMascota(mascota) {
+    setMascotaABaja(mascota);
+    setErrorBaja('');
+  }
+
+  function cerrarBajaMascota() {
+    setMascotaABaja(null);
+    setErrorBaja('');
+  }
+
+  async function confirmarBajaMascota() {
+    setDandoBaja(true);
+    setErrorBaja('');
+    try {
+      const { data } = await darDeBajaMascota(mascotaABaja.id);
+      setMascotaABaja(null);
+      const cancelados = data.turnosCancelados;
+      setAviso(
+        cancelados > 0
+          ? `${mascotaABaja.nombre} fue dada de baja y se cancelaron ${cancelados} ${cancelados === 1 ? 'turno futuro' : 'turnos futuros'}.`
+          : `${mascotaABaja.nombre} fue dada de baja.`
+      );
+      setRecarga((n) => n + 1);
+    } catch (error) {
+      const status = error.response?.status;
+      if (status === 404) {
+        setMascotaABaja(null);
+        setErrorMascotas('Esa mascota ya no existe.');
+        setRecarga((n) => n + 1);
+      } else if (!error.response) {
+        setErrorBaja('No se pudo conectar con el servidor. Intentá nuevamente.');
+      } else {
+        setErrorBaja(mensajeDeError(error, 'No se pudo dar de baja la mascota. Intentá nuevamente.'));
+      }
+    } finally {
+      setDandoBaja(false);
     }
   }
 
@@ -326,6 +396,11 @@ export default function ClienteFicha() {
                   {mayuscula(m.especie)}
                   {m.raza ? ` · ${m.raza}` : ''}
                 </p>
+                <div className="pagina__acciones">
+                  <button type="button" className="boton boton--peligro" onClick={() => abrirBajaMascota(m)}>
+                    Dar de baja
+                  </button>
+                </div>
               </div>
             </li>
           ))}
@@ -388,6 +463,24 @@ export default function ClienteFicha() {
             </p>
           )}
           {anonimizando && <p className="aviso">Anonimizando…</p>}
+        </Modal>
+      )}
+
+      {mascotaABaja && (
+        <Modal
+          titulo="Dar de baja mascota"
+          mensaje={mensajeBajaMascota(mascotaABaja, turnosFuturosDe(mascotaABaja.id).length)}
+          textoConfirmar="Dar de baja"
+          tipo="peligro"
+          onConfirmar={confirmarBajaMascota}
+          onCancelar={cerrarBajaMascota}
+        >
+          {errorBaja && (
+            <p className="error error--caja" role="alert">
+              {errorBaja}
+            </p>
+          )}
+          {dandoBaja && <p className="aviso">Dando de baja…</p>}
         </Modal>
       )}
 
