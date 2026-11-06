@@ -20,9 +20,9 @@ async function login(req, res, next) {
   }
 }
 
-function logout(req, res, next) {
+async function logout(req, res, next) {
   try {
-    res.json(servicio.cerrarSesion(res));
+    res.json(await servicio.cerrarSesion(req.usuario.id, res));
   } catch (err) {
     next(err);
   }

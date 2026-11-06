@@ -215,7 +215,7 @@ async function darDeBajaCliente(adminId, clienteId) {
 
   await pool.execute(
     `UPDATE usuarios
-        SET estado_cuenta = 'inactiva', modificado_por = ?
+        SET estado_cuenta = 'inactiva', token_version = token_version + 1, modificado_por = ?
       WHERE id = ? AND rol = 'cliente'`,
     [adminId, clienteId]
   );
@@ -337,6 +337,7 @@ async function anonimizarCliente(adminId, clienteId) {
              email = NULL,
              password_hash = NULL,
              estado_cuenta = 'inactiva',
+             token_version = token_version + 1,
              modificado_por = ?
        WHERE id = ? AND rol = 'cliente'`,
       [`ANON-${clienteId}`, adminId, clienteId]

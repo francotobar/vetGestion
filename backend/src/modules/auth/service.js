@@ -116,7 +116,7 @@ async function registro(datos) {
 async function login({ documento, password }, res) {
   const [[usuario]] = await pool.execute(
     `SELECT id, rol, documento, nombre, apellido, telefono, email,
-            password_hash, estado_cuenta, intentos_fallidos, bloqueado
+            password_hash, estado_cuenta, intentos_fallidos, bloqueado, token_version
        FROM usuarios WHERE documento = ?`,
     [documento]
   );
@@ -147,13 +147,19 @@ async function login({ documento, password }, res) {
   }
 
   await pool.execute('UPDATE usuarios SET intentos_fallidos = 0 WHERE id = ?', [usuario.id]);
-  const token = jwt.sign({ id: usuario.id, rol: usuario.rol }, env.JWT_SECRET, { expiresIn: '8h' });
+  const token = jwt.sign(
+    { id: usuario.id, rol: usuario.rol, tv: usuario.token_version },
+    env.JWT_SECRET,
+    { expiresIn: '8h' }
+  );
   res.cookie(COOKIE_SESION, token, opcionesCookie());
   return mapearUsuario(usuario);
 }
 
-// POST /auth/logout: borra la cookie de sesión.
-function cerrarSesion(res) {
+// POST /auth/logout: revoca en el servidor todas las sesiones del usuario
+// (incrementa token_version) y borra la cookie de este navegador.
+async function cerrarSesion(usuarioId, res) {
+  await pool.execute('UPDATE usuarios SET token_version = token_version + 1 WHERE id = ?', [usuarioId]);
   res.clearCookie(COOKIE_SESION, atributosCookie());
   return { mensaje: 'Sesión cerrada' };
 }
@@ -183,6 +189,7 @@ async function desbloquearPorAdmin(adminId, clienteId, { password } = {}) {
           SET bloqueado = 0,
               intentos_fallidos = 0,
               password_hash = ?,
+              token_version = token_version + 1,
               estado_cuenta = IF(estado_cuenta = 'sin_cuenta', 'con_cuenta', estado_cuenta),
               modificado_por = ?
         WHERE id = ?`,
@@ -313,6 +320,7 @@ async function restablecerPorToken({ token, password }) {
        SET password_hash = ?,
            bloqueado = 0,
            intentos_fallidos = 0,
+           token_version = token_version + 1,
            reset_token_hash = NULL,
            reset_expira = NULL
      WHERE id = ?`,

@@ -16,6 +16,7 @@ CREATE TABLE usuarios (
   consentimiento_at DATETIME NULL,
   reset_token_hash CHAR(64) NULL,
   reset_expira DATETIME NULL,
+  token_version INT NOT NULL DEFAULT 1,
   creado_por INT UNSIGNED NULL,
   modificado_por INT UNSIGNED NULL,
   creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
