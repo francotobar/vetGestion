@@ -1,5 +1,9 @@
 // Resetea la base de datos: la elimina y la vuelve a crear con db/schema.sql.
 // Uso: npm run db:reset
+// Zona horaria del proyecto (regla 8 del plan): se fija en el código para que
+// funcione en Windows, donde el prefijo TZ=... de npm no es válido.
+process.env.TZ = 'America/Argentina/Buenos_Aires';
+
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
@@ -62,7 +66,11 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error('Error al resetear la base:', err.message);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Error al resetear la base:', err.message);
+    process.exit(1);
+  });
+}
+
+module.exports = { dividirSentencias };

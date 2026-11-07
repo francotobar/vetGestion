@@ -7,7 +7,7 @@ import Campo from '../../components/Campo.jsx';
 // Pantalla pública de acceso (RF02): documento + contraseña.
 // Redirige según el rol: admin → /admin/agenda, cliente → /turnos (FE-02).
 export default function Login() {
-  const { usuario, login } = useAuth();
+  const { usuario, login, avisoSesion } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   // Aviso de éxito que deja la pantalla de Registro tras crear la cuenta.
@@ -64,6 +64,12 @@ export default function Login() {
       {avisoRegistro && (
         <p className="aviso aviso--ok" role="status">
           {avisoRegistro}
+        </p>
+      )}
+
+      {avisoSesion && !errorApi && (
+        <p className="aviso" role="status">
+          {avisoSesion}
         </p>
       )}
 

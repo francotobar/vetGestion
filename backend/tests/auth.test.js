@@ -125,7 +125,7 @@ describe('POST /api/auth/registro', () => {
       nombre: 'Email',
       apellido: 'Duplicado',
       telefono: '1100000004',
-      email: 'luciana.garcia@example.com', // pertenece al seed; no se modifica
+      email: 'laura.ejemplo@example.com', // pertenece al seed; no se modifica
       password: 'clave12',
       consentimiento: true,
     });

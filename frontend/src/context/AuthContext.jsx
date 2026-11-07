@@ -7,6 +7,8 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
+  // Mensaje del backend cuando la cookie existe pero ya no es válida (SESION_REVOCADA).
+  const [avisoSesion, setAvisoSesion] = useState('');
 
   // Al iniciar: intento recuperar la sesión vigente (cookie JWT).
   // Si /auth/me falla (sin sesión, o el endpoint todavía no existe),
@@ -17,8 +19,12 @@ export function AuthProvider({ children }) {
       .then(({ data }) => {
         if (activo) setUsuario(data);
       })
-      .catch(() => {
-        if (activo) setUsuario(null);
+      .catch((error) => {
+        if (!activo) return;
+        setUsuario(null);
+        if (error.response?.data?.codigo === 'SESION_REVOCADA') {
+          setAvisoSesion(error.response.data.mensaje);
+        }
       })
       .finally(() => {
         if (activo) setCargando(false);
@@ -31,6 +37,7 @@ export function AuthProvider({ children }) {
   // Devuelve el usuario logueado para que la pantalla pueda redirigir
   // según el rol (admin → /admin/agenda, cliente → /turnos; FE-02).
   async function login(datos) {
+    setAvisoSesion('');
     await iniciarSesion(datos);
     const { data } = await usuarioActual();
     setUsuario(data);
@@ -42,11 +49,12 @@ export function AuthProvider({ children }) {
       await cerrarSesion();
     } finally {
       setUsuario(null);
+      setAvisoSesion('');
     }
   }
 
   return (
-    <AuthContext.Provider value={{ usuario, cargando, login, logout }}>
+    <AuthContext.Provider value={{ usuario, cargando, avisoSesion, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

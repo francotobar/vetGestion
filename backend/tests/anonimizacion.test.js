@@ -48,7 +48,7 @@ beforeAll(async () => {
   // Cliente propio
   const [cli] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, email, password_hash, estado_cuenta)
-     VALUES ('cliente', ?, 'Carlos', 'Perez', '1122334411', 'test15_cli@vetgestion.test', ?, 'con_cuenta')`,
+     VALUES ('cliente', ?, 'Cliente', 'Anonimizable', '1100000011', 'test15.cli@example.com', ?, 'con_cuenta')`,
     [DOC_CLIENTE, hash]
   );
   clienteId = cli.insertId;
@@ -194,7 +194,7 @@ describe('POST /api/admin/clientes/:id/anonimizar', () => {
     const hashCli2 = await bcrypt.hash('clave12', 4);
     const [cli2] = await pool.execute(
       `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, email, password_hash, estado_cuenta)
-       VALUES ('cliente', ?, 'Test', 'Doble', '1100000000', 'test doble@vetgestion.test', ?, 'con_cuenta')`,
+       VALUES ('cliente', ?, 'Test', 'Doble', '1100000000', 'test15.doble@example.com', ?, 'con_cuenta')`,
       ['TEST-DOBLE2', hashCli2]
     );
     const cliente2Id = cli2.insertId;
@@ -219,7 +219,7 @@ describe('POST /api/admin/clientes/:id/anonimizar', () => {
     const hashCli2 = await bcrypt.hash('clave12', 4);
     const [cli2] = await pool.execute(
       `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, email, password_hash, estado_cuenta)
-       VALUES ('cliente', ?, 'Ana', 'Garcia', '1122334422', 'test15_cli2@vetgestion.test', ?, 'con_cuenta')`,
+       VALUES ('cliente', ?, 'Cliente', 'Intacto', '1100000022', 'test15.cli2@example.com', ?, 'con_cuenta')`,
       [`${DOC_CLIENTE}2`, hashCli2]
     );
     const cliente2Id = cli2.insertId;
@@ -243,8 +243,8 @@ describe('POST /api/admin/clientes/:id/anonimizar', () => {
       [cliente2Id]
     );
     expect(intacto).toBeDefined();
-    expect(intacto.nombre).toBe('Ana');
-    expect(intacto.apellido).toBe('Garcia');
+    expect(intacto.nombre).toBe('Cliente');
+    expect(intacto.apellido).toBe('Intacto');
     expect(intacto.documento).toBe(`${DOC_CLIENTE}2`);
     expect(intacto.estado_cuenta).toBe('con_cuenta');
 

@@ -50,7 +50,7 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
   * La cuenta se bloquea tras 5 intentos fallidos consecutivos.
   * Si el usuario tiene email, puede desbloquearla y restablecer su contraseña ingresando ese email. El envío está simulado: el enlace se imprime en la consola del servidor (sin SMTP real).
   * Si no tiene email, solo el administrador puede desbloquearla (asignando una contraseña temporal).
-* **RF04 – Cierre de sesión:** El sistema debe permitir cerrar sesión.
+* **RF04 – Cierre de sesión:** El sistema debe permitir cerrar sesión. La sesión se revoca en el servidor: cerrar sesión invalida todas las sesiones del usuario, en todos los dispositivos, y una cookie anterior responde 401 `SESION_REVOCADA`.
 
 ### Cliente
 * **RF05 – Gestión de mascotas:** El cliente puede registrar, editar y dar de baja una o más mascotas propias (relación 1:N).
@@ -64,7 +64,7 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
 
 ### Administrador
 * **RF13 – Gestión de servicios:** Alta, modificación y baja lógica del catálogo de servicios (nombre, descripción, activo). Los clientes ven y eligen solo servicios activos.
-* **RF14 – Gestión de clientes y mascotas:** CRUD de clientes y sus mascotas, con estado de cuenta (con cuenta / sin cuenta / inactiva). El administrador crea y edita las mascotas del cliente, pero todavía no las da de baja (trabajo futuro).
+* **RF14 – Gestión de clientes y mascotas:** CRUD de clientes y sus mascotas, con estado de cuenta (con cuenta / sin cuenta / inactiva). El administrador crea, edita y da de baja las mascotas del cliente. La baja es lógica: la mascota deja de aparecer en la ficha, no recibe reservas y sus turnos futuros pendientes o confirmados se cancelan; los turnos pasados no se modifican.
 * **RF15 – Gestión de turnos:**
   * Ver la agenda por día y por semana.
   * Crear turnos manuales (canal telefónico o presencial) para un cliente existente; si el cliente no existe, se lo da de alta asistida (RF01b). El turno manual nace *confirmado*.
@@ -143,7 +143,6 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
 ## Trabajo futuro
 * Envío real de emails con SMTP: la recuperación de contraseña está simulada (el enlace se imprime en la consola del servidor) (RF03).
 * Edición de perfil propio por el cliente; hoy la rectificación la hace el administrador (RNF04).
-* Baja lógica de una mascota realizada por el administrador (RF14).
 * Id de la ficha existente en la respuesta de documento o email duplicado (RF17).
 * Verificación de rendimiento (RNF07) y prueba de usabilidad con usuarios reales (RNF08).
 

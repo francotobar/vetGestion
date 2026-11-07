@@ -45,13 +45,9 @@ function mayuscula(texto) {
   return texto ? texto.charAt(0).toUpperCase() + texto.slice(1) : '';
 }
 
-function mensajeBajaMascota(mascota, cantidadFuturos) {
-  const base = `${mascota.nombre} dejará de aparecer en la ficha y no podrá recibir nuevas reservas. Su historial se conserva y los turnos pasados no se modifican.`;
-  if (cantidadFuturos === 0) {
-    return `${base} No tiene turnos futuros para cancelar.`;
-  }
-  const turnos = cantidadFuturos === 1 ? '1 turno futuro' : `${cantidadFuturos} turnos futuros`;
-  return `${base} Se cancelarán ${turnos} y las franjas quedarán libres.`;
+// El número exacto de turnos cancelados lo informa la API después de confirmar.
+function mensajeBajaMascota(mascota) {
+  return `Se cancelarán los turnos futuros pendientes o confirmados de ${mascota.nombre} y sus franjas quedarán libres. ${mascota.nombre} dejará de aparecer en la ficha y no podrá recibir nuevas reservas. Su historial y los turnos pasados no se modifican.`;
 }
 
 function TarjetaTurno({ turno }) {
@@ -186,17 +182,6 @@ export default function ClienteFicha() {
     } finally {
       setAnonimizando(false);
     }
-  }
-
-  // Turnos futuros pendientes o confirmados de una mascota, según los turnos ya
-  // cargados en la ficha (cubren todo el plazo de reserva).
-  function turnosFuturosDe(mascotaId) {
-    return (turnos || []).filter(
-      (t) =>
-        t.mascotaId === mascotaId &&
-        ['pendiente', 'confirmado'].includes(t.estado) &&
-        dayjs(t.fechaHora).isAfter(dayjs())
-    );
   }
 
   function abrirBajaMascota(mascota) {
@@ -469,7 +454,7 @@ export default function ClienteFicha() {
       {mascotaABaja && (
         <Modal
           titulo="Dar de baja mascota"
-          mensaje={mensajeBajaMascota(mascotaABaja, turnosFuturosDe(mascotaABaja.id).length)}
+          mensaje={mensajeBajaMascota(mascotaABaja)}
           textoConfirmar="Dar de baja"
           tipo="peligro"
           onConfirmar={confirmarBajaMascota}

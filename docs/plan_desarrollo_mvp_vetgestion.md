@@ -12,7 +12,7 @@
 4. **Capas:** rutas → controlador → servicio → base de datos. Las reglas de negocio viven **solo** en `service`. El frontend nunca decide reglas de negocio; solo las refleja.
 5. **Seguridad mínima obligatoria:** consultas parametrizadas (nunca concatenar SQL), hash bcrypt, autorización por rol en el servidor, validación de entrada con `zod`.
 6. **Idioma:** nombres de dominio, tablas y mensajes de error en español. Código en `camelCase`; columnas en `snake_case`.
-7. **Formato de error de la API:** `{ "codigo": "FRANJA_OCUPADA", "mensaje": "La franja ya fue reservada" }` con el status HTTP correcto (400 validación, 401 sin sesión, 403 sin permiso, 404 no existe, 409 conflicto, 422 regla de negocio, 423 cuenta bloqueada).
+7. **Formato de error de la API:** `{ "codigo": "FRANJA_OCUPADA", "mensaje": "La franja ya fue reservada" }` con el status HTTP correcto (400 validación, 401 sin sesión, 403 sin permiso, 404 no existe, 409 conflicto, 422 regla de negocio, 423 cuenta bloqueada). Los códigos de negocio de la sección 6 (por ejemplo `MASCOTA_INACTIVA`, `CONFLICTO_ESTADO`, `SESION_REVOCADA`) se usan con el status indicado allí.
 8. **Fechas:** ejecutar Node con `TZ=America/Argentina/Buenos_Aires`. Guardar `DATETIME` locales (sin zona). Conexión mysql2 con `dateStrings: true`. Formato de intercambio: `fecha` = `YYYY-MM-DD`, `hora` = `HH:mm`.
 
 ---
@@ -62,7 +62,11 @@ SLOT_MINUTOS=30
 ANTELACION_HS=24
 DIAS_MAX_RESERVA=60
 TZ=America/Argentina/Buenos_Aires
+DB_SSL_CA=
+SEED_ADMIN_PASSWORD=
 ```
+
+`DB_SSL_CA` (opcional) es el certificado de la base remota (Aiven). Con SSL, `npm run demo:reset` exige `SEED_ADMIN_PASSWORD` (6 caracteres y 2 números). Sin SSL, `SEED_ADMIN_PASSWORD` es opcional y la contraseña del admin de demo local es `Admin12`.
 
 ---
 
@@ -74,14 +78,15 @@ vetGestion/
 ├─ README.md
 ├─ docs/
 │  ├─ DECISIONES.md
+│  ├─ inmutabilidad.md
 │  ├─ especificacion_proyecto_veterinario.md
 │  ├─ plan_desarrollo_mvp_vetgestion.md
 │  └─ proyecto_vetgestion_documento_de_apuntes_y_especificacion.md
 ├─ backend/
-│  ├─ db/ schema.sql  reset.js  seed.js
+│  ├─ db/ schema.sql  reset.js  seed.js  demo-reset.js  datos-demo.js  migraciones/ (001_token_version.sql)
 │  ├─ src/
 │  │  ├─ app.js  server.js
-│  │  ├─ config/ env.js  db.js
+│  │  ├─ config/ env.js  db.js  ssl.js
 │  │  ├─ middlewares/ auth.js  roles.js  validar.js  errores.js
 │  │  ├─ utils/ fechas.js  password.js  errores.js
 │  │  └─ modules/
@@ -129,6 +134,7 @@ CREATE TABLE usuarios (
   consentimiento_at DATETIME NULL,
   reset_token_hash CHAR(64) NULL,
   reset_expira DATETIME NULL,
+  token_version INT NOT NULL DEFAULT 1,      -- revocación de sesiones (migración 001)
   creado_por INT UNSIGNED NULL,
   modificado_por INT UNSIGNED NULL,
   creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -247,12 +253,12 @@ DELIMITER ;
 * Cancelar un turno pone `fecha_hora_activa` en `NULL` y libera la franja automáticamente.
 * Comando de respaldo (documentar en el README): `mysqldump -u root -p vetgestion > backup.sql`.
 
-### Seed (`backend/db/seed.js`, se ejecuta con `npm run seed`)
-El script debe hashear contraseñas con bcrypt (no usar hashes escritos a mano):
-* Admin: documento `00000000`, contraseña `Admin12`, `rol='admin'`, `estado_cuenta='con_cuenta'`.
+### Seed y datos de demostración (`backend/db/seed.js`, `backend/db/datos-demo.js`)
+`npm run seed` limpia y carga los datos de demostración (la guarda de SSL no cambia: no siembra bases con `DB_SSL_CA`). `npm run demo:reset` borra las tablas, vuelve a aplicar `schema.sql` (con `token_version` y los triggers) y carga los mismos datos; requiere escribir el nombre de la base para confirmar y comprueba antes que el usuario puede crear triggers. Los datos son ficticios (dominio `example.com`, documentos `9000000X`) y los turnos usan fechas relativas a la ejecución. El script hashea contraseñas con bcrypt (no usar hashes escritos a mano):
+* Admin: documento `00000000`, contraseña `Admin12` (o `SEED_ADMIN_PASSWORD` si está definida), `rol='admin'`, `estado_cuenta='con_cuenta'`.
 * Servicios: Consulta general, Vacunación, Control de peso, Desparasitación, Castración (consulta).
 * Feriados de ejemplo: `2026-12-08` (Inmaculada Concepción), `2026-12-25` (Navidad).
-* Demo: 2 clientes con cuenta (contraseña `Demo12`), 1 cliente `sin_cuenta` sin email, 3 mascotas, y algunos turnos de ejemplo (incluyendo pasados en estado `atendido`, insertados directamente por SQL).
+* Demo: 3 clientes con cuenta (contraseña `Demo12`; uno sin mascotas), 1 cliente `sin_cuenta` sin email, 4 mascotas activas y 1 dada de baja, turnos en todos los estados (`pendiente`, `confirmado`, `cancelado`, `atendido`, `ausente`) con fechas relativas a la ejecución (próximos días hábiles y pasados), y 2 atenciones con una nota aclaratoria. Insertados directamente por SQL.
 
 ---
 
@@ -272,27 +278,27 @@ El script debe hashear contraseñas con bcrypt (no usar hashes escritos a mano):
 3. Devolver `generarFranjas()` menos las ocupadas y menos las ya pasadas (si es hoy).
 
 **`crearComoCliente(usuarioId, { mascotaId, servicioId, fecha, hora })`**
-1. La mascota pertenece al usuario y está activa; si no → 404.
+1. La mascota pertenece al usuario; si no existe o es ajena → 404. Si está dada de baja (`activa = 0`) → 422 `MASCOTA_INACTIVA`. Los pasos 1 a 5 corren en una transacción que bloquea la fila de la mascota (`SELECT ... FOR UPDATE`): una baja que confirma en paralelo no puede dejar un turno activo para una mascota inactiva.
 2. El servicio existe y está activo.
 3. `validarFranja(...)`.
 4. `INSERT` con `estado='pendiente'`, `canal='web'`, `creado_por=usuarioId`.
 5. Si MySQL lanza `ER_DUP_ENTRY` → **409 `FRANJA_OCUPADA`**. *No* hacer "SELECT y luego INSERT" como único control: la restricción única de la BD es la garantía.
 
 **`crearComoAdmin(adminId, { usuarioId, mascotaId, servicioId, fecha, hora, canal })`**
-Igual que el anterior, pero: `canal ∈ {telefonico, presencial}`, `estado='confirmado'`, la mascota debe pertenecer al `usuarioId` indicado y se permite una franja desde la franja actual en adelante.
+Igual que el anterior, pero: `canal ∈ {telefonico, presencial}`, `estado='confirmado'`, la mascota debe pertenecer al `usuarioId` indicado y se permite una franja desde la franja actual en adelante. Mascota inactiva → 422 `MASCOTA_INACTIVA`. Misma transacción con bloqueo de la mascota que el cliente.
 
 **`cancelarComoCliente(usuarioId, turnoId)`**
 * Solo turnos propios en `pendiente` o `confirmado`.
 * Si `horasHasta(fecha_hora) < ANTELACION_HS` → 422 `ANTELACION_INSUFICIENTE`.
-* `UPDATE estado='cancelado', modificado_por=usuarioId`.
+* `UPDATE estado='cancelado', modificado_por=usuarioId WHERE id = ? AND estado = <estado leído>`. Si el UPDATE no afecta filas → 409 `CONFLICTO_ESTADO` sin cambios.
 
 **`reprogramarComoCliente(usuarioId, turnoId, { fecha, hora })`**
 * Mismas validaciones de propiedad, estado y antelación (sobre el turno actual).
 * `validarFranja(nueva)`; `UPDATE fecha_hora=?, estado='pendiente'`; capturar `ER_DUP_ENTRY` → 409.
-* Se hace con un único `UPDATE` (atómico).
+* Transacción: bloquea la fila de la mascota (`FOR UPDATE`), revalida que siga activa (422 `MASCOTA_INACTIVA`), valida la franja y ejecuta un `UPDATE` condicionado al estado leído (0 filas → 409 `CONFLICTO_ESTADO`). `ER_DUP_ENTRY` → 409 `FRANJA_OCUPADA`.
 
 **`cambiarEstado(adminId, turnoId, nuevoEstado)`** (admin)
-Mapa de transiciones válidas; cualquier otra → 422 `TRANSICION_INVALIDA`:
+Mapa de transiciones válidas; cualquier otra → 422 `TRANSICION_INVALIDA`. El `UPDATE` exige el estado leído: si otra operación lo cambió entre la lectura y la escritura, 0 filas → 409 `CONFLICTO_ESTADO`.
 ```js
 const TRANSICIONES = {
   pendiente:  ['confirmado', 'cancelado'],
@@ -303,19 +309,20 @@ const TRANSICIONES = {
 
 **`urgencia(adminId, turnoId, { accion, motivo, fecha?, hora? })`** (admin)
 * Sin antelación mínima. `motivo` obligatorio.
-* `accion='cancelar'` → estado `cancelado`. `accion='reprogramar'` → nueva franja validada (mismas reglas, 409 si ocupada).
+* `accion='cancelar'` → estado `cancelado`. `accion='reprogramar'` → nueva franja validada (mismas reglas, 409 si ocupada; mascota inactiva → 422 `MASCOTA_INACTIVA`). Los `UPDATE` exigen el estado leído (409 `CONFLICTO_ESTADO`).
 * Siempre `es_urgencia=1` y guarda el motivo.
 * Responde `{ turno, cliente: { nombre, apellido, telefono, email } }` para que el admin avise manualmente.
 
-**`reprogramarComoAdmin(adminId, turnoId, { fecha, hora })`** — igual que el del cliente, sin antelación mínima y conservando el estado.
+**`reprogramarComoAdmin(adminId, turnoId, { fecha, hora })`** — igual que el del cliente, sin antelación mínima y conservando el estado (mascota inactiva → 422 `MASCOTA_INACTIVA`).
 
 ### `auth.service.js`
 * **Registro:** validar con zod (documento, nombre, apellido, teléfono, contraseña, `consentimiento === true`; email opcional). Regla de contraseña: `/^(?=(?:.*\d){2,}).{6,}$/`.
   * Si el documento existe con `sin_cuenta` **y el teléfono coincide** → vincular: setear `password_hash`, email (si viene y no está usado), `consentimiento_at`, `estado_cuenta='con_cuenta'`.
   * Si existe con otro estado, o el teléfono no coincide → 409.
   * Email ya usado → 409 `EMAIL_DUPLICADO`.
-* **Login:** buscar por documento. Si no existe, o `estado_cuenta != 'con_cuenta'` → 401 genérico ("Documento o contraseña incorrectos"). Si `bloqueado=1` → 423 `CUENTA_BLOQUEADA` (con un mensaje distinto si tiene email o no). Contraseña incorrecta → `intentos_fallidos+1`; al llegar a 5 → `bloqueado=1`. Éxito → `intentos_fallidos=0` y emitir cookie JWT con `{ id, rol }`.
-* **Desbloqueo por admin:** `bloqueado=0`, `intentos_fallidos=0` y nueva contraseña temporal opcional.
+* **Login:** buscar por documento. Si no existe, o `estado_cuenta != 'con_cuenta'` → 401 genérico ("Documento o contraseña incorrectos"). Si `bloqueado=1` → 423 `CUENTA_BLOQUEADA` (con un mensaje distinto si tiene email o no). Contraseña incorrecta → `intentos_fallidos+1`; al llegar a 5 → `bloqueado=1`. Éxito → `intentos_fallidos=0` y emitir cookie JWT con `{ id, rol, tv }`, donde `tv` es `usuarios.token_version`.
+* **Desbloqueo por admin:** `bloqueado=0`, `intentos_fallidos=0` y nueva contraseña temporal opcional. Si se fija contraseña temporal, incrementa `token_version` y revoca las sesiones anteriores del cliente.
+* **Sesiones revocables:** el middleware `auth` compara `tv` del JWT con `usuarios.token_version`. Si no coincide, si el token no trae versión, o si el usuario no existe o no está vigente (`con_cuenta` y no bloqueado), responde 401 `SESION_REVOCADA`. Incrementan la versión: logout (cierra **todas** las sesiones del usuario, en todos los dispositivos), restablecer contraseña, desbloqueo con contraseña temporal, baja y anonimización del cliente. El login no revoca sesiones existentes.
 * **Recuperación por email (P1):** ver tarea BE-16.
 
 ---
@@ -329,11 +336,11 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 | GET `/salud` | P | Salud del sistema (chequea la conexión a la base) | P0 |
 | POST `/auth/registro` | P | Registro de cliente (RF01a) | P0 |
 | POST `/auth/login` | P | Login | P0 |
-| POST `/auth/logout` | C/A | Cierra sesión (borra cookie) | P0 |
+| POST `/auth/logout` | C/A | Cierra sesión: revoca todas las sesiones del usuario y borra la cookie | P0 |
 | GET `/auth/me` | C/A | Usuario actual | P0 |
 | POST `/auth/recuperar` | P | Pide desbloqueo/restablecimiento por email | P1 |
 | POST `/auth/restablecer` | P | `{ token, password }` | P1 |
-| GET/POST/PUT/DELETE `/mascotas` | C | CRUD de mascotas propias (DELETE = baja lógica) | P0 |
+| GET/POST/PUT/DELETE `/mascotas` | C | CRUD de mascotas propias (DELETE = baja lógica con cancelación de sus turnos futuros) | P0 |
 | GET `/mascotas/:id/historial` | C | Historial completo, solo propias | P1 |
 | GET `/servicios` | C/A | Servicios activos | P0 |
 | GET `/feriados` | C/A | Lista de feriados | P0 |
@@ -351,10 +358,11 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 | POST `/admin/clientes` | A | Alta asistida (RF01b, RF24) | P0 |
 | GET/PUT `/admin/clientes/:id` | A | Ver/editar cliente | P0 |
 | POST `/admin/clientes/:id/desbloquear` | A | Desbloquea y fija contraseña temporal | P0 |
-| POST `/admin/clientes/:id/baja` | A | Pasa a `inactiva` | P0 |
+| POST `/admin/clientes/:id/baja` | A | Pasa a `inactiva` y revoca sus sesiones | P0 |
 | POST `/admin/clientes/:id/anonimizar` | A | Supresión (RNF04) | P1 |
 | GET/POST `/admin/clientes/:id/mascotas` | A | Mascotas del cliente | P0 |
 | PUT `/admin/mascotas/:id` | A | Editar mascota | P0 |
+| DELETE `/admin/mascotas/:id` | A | Baja lógica de cualquier mascota con cancelación de sus turnos futuros (`turnos_cancelados` en la respuesta) | P0 |
 | GET/POST/PUT `/admin/servicios` | A | Catálogo de servicios (activar/desactivar) | P0 |
 | POST/DELETE `/admin/feriados` | A | Alta/baja de feriados | P0 |
 | POST `/admin/turnos/:id/atencion` | A | Cargar atención (turno `atendido`) | P1 |
@@ -362,6 +370,18 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 | POST `/admin/atenciones/:id/notas` | A | Nota aclaratoria | P1 |
 
 *No existen endpoints PUT/DELETE de atenciones.*
+
+**Códigos de error de negocio** (además de los de la regla 7):
+
+| Código | Status | Cuándo |
+| --- | --- | --- |
+| `SESION_REVOCADA` | 401 | La cookie ya no es válida: logout (en cualquier dispositivo), restablecimiento de contraseña, desbloqueo con contraseña temporal, baja o anonimización del usuario, token sin versión, o usuario no vigente (también bloqueado) |
+| `MASCOTA_INACTIVA` | 422 | Reserva, alta de turno manual o reprogramación de una mascota dada de baja |
+| `CONFLICTO_ESTADO` | 409 | Un UPDATE condicionado al estado leído no afectó filas: otra operación cambió el turno entre la lectura y la escritura. No se modifica nada |
+| `FRANJA_OCUPADA` | 409 | Restricción única de la franja (índice `fecha_hora_activa`) |
+| `TRANSICION_INVALIDA` | 422 | Cambio de estado no permitido por el mapa de transiciones |
+
+En una carrera simultánea, el perdedor recibe 409 `CONFLICTO_ESTADO` si la otra operación terminó mientras él leía el turno, o 422 `TRANSICION_INVALIDA` si la otra terminó antes de su lectura (el turno ya no admite la transición).
 
 **Autorización:** `auth.js` valida la cookie y carga `req.usuario`; `roles('admin')` / `roles('cliente')` protegen cada router. Los endpoints de cliente filtran **siempre** por `req.usuario.id` (un recurso ajeno responde 404, no 403, para no filtrar información).
 
@@ -490,6 +510,6 @@ Componentes compartidos: `SelectorFranja` (usado por reserva, reprogramación y 
 
 ## 9. Fuera del MVP (documentar como trabajo futuro)
 
-Recordatorios por email 24 h antes (RF13), backups automáticos, disponibilidad garantizada del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales. Quedan también como trabajo futuro la baja de mascota realizada por el administrador (RF14), la edición de perfil propio por el cliente (RNF04) y el id de la ficha existente en la respuesta de duplicado (RF17).
+Recordatorios por email 24 h antes (RF13), backups automáticos, disponibilidad garantizada del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales. Quedan también como trabajo futuro la edición de perfil propio por el cliente (RNF04) y el id de la ficha existente en la respuesta de duplicado (RF17). La baja de mascota por el administrador ya está implementada (ver sección 6).
 
 

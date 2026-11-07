@@ -12,9 +12,9 @@ const { pool } = require('../src/config/db');
 const DOC_A = 'TEST08-CLI-A';
 const DOC_B = 'TEST08-CLI-B';
 const DOC_ADM = 'TEST08-ADM';
-const FECHA = '2026-11-12'; // jueves (laborable, sin feriados)
+const FECHA = '2026-11-24'; // martes (laborable, sin feriados; fuera de la ventana del seed)
 const FRANJA = '09:00';
-const FECHA_CONCURRENCIA = '2026-11-11'; // miércoles (laborable)
+const FECHA_CONCURRENCIA = '2026-11-25'; // miércoles (laborable)
 const FRANJA_CONCURRENCIA = '10:00';
 
 async function crearCliente(documento) {

@@ -3,7 +3,7 @@
 // ese turno se cancela, vuelve a aparecer.
 //
 // No alteran el seed: usuarios "TEST07-*", una mascota propia, turnos propios
-// sobre fechas sin turnos del seed (2026-11-09 y 2026-11-10) y limpieza al
+// sobre fechas sin turnos del seed (2026-11-24 y 2026-11-25) y limpieza al
 // terminar la suite. Los feriados y servicios del seed solo se leen.
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
@@ -14,8 +14,8 @@ const servicio = require('../src/modules/turnos/service');
 
 const DOC_CLI = 'TEST07-CLI';
 const DOC_ADM = 'TEST07-ADM';
-const FECHA_OCUPADA = '2026-11-09'; // lunes (laborable, sin feriados ni turnos del seed)
-const FECHA_LIBRE = '2026-11-10'; // martes, sin turnos
+const FECHA_OCUPADA = '2026-11-24'; // martes (laborable, sin feriados ni turnos del seed)
+const FECHA_LIBRE = '2026-11-25'; // miércoles, sin turnos
 
 async function crearAdmin(documento) {
   const hash = await bcrypt.hash('clave12', 10);
@@ -161,16 +161,16 @@ describe('disponibilidad', () => {
   });
 
   test('si el día es hoy, descarta las franjas ya pasadas (servicio con ahora fijo)', async () => {
-    // "hoy" simulado: martes 2026-11-10 a las 12:00:30.
-    const franjas = await servicio.disponibilidad(FECHA_LIBRE, new Date(2026, 10, 10, 12, 0, 30));
+    // "hoy" simulado: miércoles 2026-11-25 a las 12:00:30.
+    const franjas = await servicio.disponibilidad(FECHA_LIBRE, new Date(2026, 10, 25, 12, 0, 30));
     expect(franjas).toEqual(generarFranjas().filter((h) => h >= '12:30'));
 
     // Cerrado el día: sin franjas.
-    const noche = await servicio.disponibilidad(FECHA_LIBRE, new Date(2026, 10, 10, 23, 59, 59));
+    const noche = await servicio.disponibilidad(FECHA_LIBRE, new Date(2026, 10, 25, 23, 59, 59));
     expect(noche).toEqual([]);
 
     // Una fecha que ya pasó respecto del "ahora" también devuelve [].
-    const pasada = await servicio.disponibilidad(FECHA_OCUPADA, new Date(2026, 10, 11, 9, 0, 0));
+    const pasada = await servicio.disponibilidad(FECHA_OCUPADA, new Date(2026, 10, 26, 9, 0, 0));
     expect(pasada).toEqual([]);
   });
 });
