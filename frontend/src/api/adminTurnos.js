@@ -2,7 +2,7 @@ import api from './cliente.js';
 
 // Endpoints de la agenda del administrador (sección 6 del plan, BE-10/BE-11):
 //   GET   /admin/turnos?desde=&hasta=&estado=  → agenda con joins (A)
-//   POST  /admin/turnos                        → turno manual (A), RF21
+//   POST  /admin/turnos                        → turno manual (A), RF15
 //   PATCH /admin/turnos/:id/estado             → cambiar estado (A)
 //   PATCH /admin/turnos/:id/reprogramar        → reprogramar sin antelación (A)
 //   POST  /admin/turnos/:id/urgencia           → cancelar/reprogramar por urgencia (A)
@@ -49,7 +49,7 @@ export function agenda({ desde, hasta, estado } = {}) {
   }));
 }
 
-// Turno manual (POST /admin/turnos, RF21 y BE-10): el backend lo crea en
+// Turno manual (POST /admin/turnos, RF15 y BE-10): el backend lo crea en
 // estado 'confirmado', con canal ∈ {telefonico, presencial} y creado_por =
 // admin. Errores: 404 (cliente/mascota/servicio inexistente o inactivo),
 // 422 FRANJA_INVALIDA (fin de semana, feriado, fuera del horario o plazo),
@@ -85,7 +85,7 @@ export function reprogramar(id, { fecha, hora }) {
 
 // Urgencia (POST /admin/turnos/:id/urgencia): { accion, motivo, fecha?, hora? }.
 // Responde { turno, cliente: { nombre, apellido, telefono, email } } para que
-// el admin avise al cliente manualmente (RF25).
+// el admin avise al cliente manualmente (RF18).
 export function urgencia(id, { accion, motivo, fecha, hora }) {
   const cuerpo = { accion, motivo };
   if (fecha) cuerpo.fecha = fecha;

@@ -89,13 +89,11 @@ Dos roles: **cliente** y **administrador** (el profesional veterinario no usa el
 | `frontend/` | `npm run build` | Build de producción en `frontend/dist` |
 | `frontend/` | `npm run preview` | Sirve el build localmente |
 
-**Pruebas:** `npm test` ejecuta **19 suites y 188 pruebas** (resultado: `Test Suites: 19 passed, 19 total` / `Tests: 188 passed, 188 total`). El script `test` usa la sintaxis Unix `TZ=...`, que Windows no entiende; en Windows hay que definir la zona antes de correr Jest, por ejemplo en PowerShell:
+**Pruebas:** `npm test` ejecuta **20 suites y 237 pruebas** (resultado: `Test Suites: 20 passed, 20 total` / `Tests: 237 passed, 237 total`), y funciona igual en Linux y Windows.
 
-```powershell
-$env:TZ='America/Argentina/Buenos_Aires'; npx jest --runInBand
-```
+Las suites comparten la base local, así que `npm test` las ejecuta en serie (`--runInBand`); en paralelo dos suites podrían elegir la misma franja. La zona horaria la fija `backend/tests/zona-horaria.js`.
 
-Las pruebas usan la base local: se saltan (no se ejecutan) si `DB_SSL_CA` está definida o si `DB_HOST` no es `localhost`. Los scripts `db:reset`, `seed` y `demo:reset` fijan la zona horaria en el propio código, así que funcionan en Windows sin el prefijo.
+Las pruebas se niegan a correr si `DB_SSL_CA` está definida o si `DB_HOST` no es `localhost` (guarda de `npm test`). Los scripts `db:reset`, `seed` y `demo:reset` fijan la zona horaria en el propio código, así que funcionan en Windows sin el prefijo `TZ=`.
 
 ## Actualizar una base existente (migración 001)
 
@@ -202,6 +200,7 @@ No existen endpoints de edición ni borrado de atenciones: son inmutables (trigg
 | `MASCOTA_INACTIVA` | 422 | La mascota está dada de baja: no admite reservas ni reprogramaciones |
 | `CONFLICTO_ESTADO` | 409 | El turno cambió mientras se operaba sobre él. No se modificó nada |
 | `FRANJA_OCUPADA` | 409 | La franja ya está reservada |
+| `DOCUMENTO_EXISTENTE` / `EMAIL_DUPLICADO` | 409 | Alta o edición de cliente con documento o email ya usados. En el alta asistida y la edición del administrador la respuesta incluye `id` (la ficha existente) y el nombre en el mensaje. En el registro propio responde sin `id` |
 | `TRANSICION_INVALIDA` | 422 | El cambio de estado no está permitido |
 
 ## Comportamientos de sesión, bajas y conflictos
@@ -273,9 +272,10 @@ Corren en planes gratuitos de Render (la base en Aiven): pueden tardar unos segu
 * Recordatorios por email 24 h antes del turno.
 * Envío real de emails con SMTP (la recuperación de contraseña hoy simula el envío imprimiendo el enlace en la consola del servidor).
 * Edición de perfil propio por el cliente (hoy la rectificación la hace el administrador).
-* Id de la ficha existente en la respuesta de documento o email duplicado.
+* Id de la ficha existente en la respuesta del registro propio ante un documento o email duplicado (el alta asistida del administrador ya lo incluye).
 * Backups automáticos y disponibilidad garantizada.
 * Verificación de tiempos de respuesta y prueba de usabilidad con usuarios.
 * Notificación automática a los clientes afectados por una urgencia.
 * Duración variable de servicios y reglas para sábados u horarios especiales.
 * Triggers de inmutabilidad también para `notas_atencion` (hoy solo protegen `atenciones`; ver `docs/inmutabilidad.md`).
+* Usuario de base con privilegios mínimos para la aplicación (hoy tiene `ALL PRIVILEGES` sobre la base; ver `docs/inmutabilidad.md`).

@@ -7,7 +7,7 @@ const textoRequerido = (max, nombre) =>
     .min(1, `${nombre} no puede estar vacío`)
     .max(max, `${nombre} como máximo ${max} caracteres`);
 
-// Alta asistida por el administrador (RF01b, RF24, BE-12).
+// Alta asistida por el administrador (RF01b, RF17, BE-12).
 // Obligatorios: nombre, apellido, documento, teléfono; email opcional.
 const altaClienteSchema = z.object({
   documento: textoRequerido(20, 'El documento'),
@@ -20,7 +20,7 @@ const altaClienteSchema = z.object({
   ),
 });
 
-// Edición de cliente por admin (RF20, BE-12).
+// Edición de cliente por admin (RF14, BE-12).
 // Modificación de datos de perfil (nombre, apellido, teléfono, email).
 const editarClienteSchema = z.object({
   nombre: textoRequerido(60, 'El nombre'),

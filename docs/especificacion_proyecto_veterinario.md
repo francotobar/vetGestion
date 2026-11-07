@@ -72,8 +72,8 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
   * Cada turno registra su canal de origen (web / telefónico / presencial) y quién lo cargó.
   * Transiciones válidas: pendiente → confirmado | cancelado; confirmado → atendido | ausente | cancelado. Los estados atendido, ausente y cancelado son finales.
 
-* **RF26 – Gestión de horarios y feriados:** El administrador carga y elimina feriados. El horario (09:00–19:00, 30 min, lunes a viernes) es configuración del sistema. Las franjas en feriados o fuera de horario no se ofrecen.
-* **RF17 – Prevención de duplicados:** Al dar de alta un cliente, el sistema rechaza documento o email ya existentes e informa el nombre del cliente existente (para reutilizar su ficha); la respuesta no incluye el id.
+* **RF16 – Gestión de horarios y feriados:** El administrador carga y elimina feriados. El horario (09:00–19:00, 30 min, lunes a viernes) es configuración del sistema. Las franjas en feriados o fuera de horario no se ofrecen.
+* **RF17 – Prevención de duplicados:** Al dar de alta un cliente, el sistema rechaza documento o email ya existentes e informa el nombre del cliente existente (para reutilizar su ficha); la respuesta incluye el id de la ficha existente (alta asistida y edición del administrador). El registro propio de un cliente responde 409 sin id.
 * **RF18 – Urgencias:** El administrador puede cancelar o reprogramar cualquier turno por urgencia médica, sin respetar la antelación mínima, indicando un motivo. El sistema marca el turno como urgencia y muestra el contacto (teléfono y email si existe) de los clientes afectados para que el administrador los avise manualmente.
 * **RF19 – Registro de atención clínica:** Para un turno *atendido*, el administrador carga la atención: nombre del profesional que atendió (texto), anamnesis, diagnóstico, tratamiento, medicación, vacunas aplicadas y observaciones. Queda asociada al turno y a la mascota, y es **inmutable** una vez guardada.
 * **RF20 – Nota aclaratoria:** El administrador puede agregar notas aclaratorias a una atención ya cargada. La nota no modifica el registro original; se muestra debajo con fecha y autor.
@@ -143,7 +143,7 @@ En el modelo actual, la veterinaria funciona sin sistema digital: los clientes l
 ## Trabajo futuro
 * Envío real de emails con SMTP: la recuperación de contraseña está simulada (el enlace se imprime en la consola del servidor) (RF03).
 * Edición de perfil propio por el cliente; hoy la rectificación la hace el administrador (RNF04).
-* Id de la ficha existente en la respuesta de documento o email duplicado (RF17).
+* Id de la ficha existente en la respuesta del registro propio ante un documento o email duplicado (RF17).
 * Verificación de rendimiento (RNF07) y prueba de usabilidad con usuarios reales (RNF08).
 
 ---

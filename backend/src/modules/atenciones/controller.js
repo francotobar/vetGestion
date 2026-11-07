@@ -10,7 +10,7 @@ function idInvalido(recurso) {
   return new ApiError(404, 'NO_ENCONTRADO', `El ${recurso} no existe`);
 }
 
-// POST /admin/turnos/:id/atencion (RF26, BE-14).
+// POST /admin/turnos/:id/atencion (RF19, BE-14).
 async function cargarAtencion(req, res, next) {
   try {
     const turnoId = parsearId(req);
@@ -33,7 +33,7 @@ async function historial(req, res, next) {
   }
 }
 
-// POST /admin/atenciones/:id/notas (RF27, BE-14).
+// POST /admin/atenciones/:id/notas (RF20, BE-14).
 async function agregarNota(req, res, next) {
   try {
     const atencionId = parsearId(req);

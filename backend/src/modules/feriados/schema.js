@@ -1,7 +1,7 @@
 const { z } = require('zod');
 const { esFechaValida } = require('../../utils/fechas');
 
-// Feriados (RF23): una fecha única (clave primaria) con su motivo.
+// Feriados (RF16): una fecha única (clave primaria) con su motivo.
 const feriadoSchema = z.object({
   fecha: z
     .string({ required_error: 'Falta la fecha' })

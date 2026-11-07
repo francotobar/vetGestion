@@ -12,7 +12,7 @@
 // Criterio de aceptación:
 // Dado un documento existente, cuando el admin intenta crearlo de nuevo,
 // entonces 409 y el mensaje incluye el nombre del cliente existente.
-// Prevención de duplicados (RF24): documento o email duplicado -> 409 con id de la ficha.
+// Prevención de duplicados (RF17): documento o email duplicado -> 409 con id de la ficha.
 //
 // Reglas: datos propios con prefijo TEST12-, limpieza al terminar.
 const request = require('supertest');
@@ -26,9 +26,9 @@ const DOC_CLIENTE2 = 'TEST12-CLI2';
 const DOC_ALTA = 'TEST12-ALTA1';
 const DOC_DUP = 'TEST12-DUP';
 
-const EMAIL_CLIENTE1 = 'test12_cli1@vetgestion.test';
-const EMAIL_CLIENTE2 = 'test12_cli2@vetgestion.test';
-const EMAIL_ALTA = 'test12_alta@vetgestion.test';
+const EMAIL_CLIENTE1 = 'test12_cli1@example.com';
+const EMAIL_CLIENTE2 = 'test12_cli2@example.com';
+const EMAIL_ALTA = 'test12_alta@example.com';
 
 let adminId;
 let cliente1Id;
@@ -42,7 +42,7 @@ beforeAll(async () => {
   // Admin propio
   const [adm] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, password_hash, estado_cuenta)
-     VALUES ('admin', ?, 'AdminTest12', 'Root', '1111111222', ?, 'con_cuenta')`,
+     VALUES ('admin', ?, 'AdminTest12', 'Root', '1100000021', ?, 'con_cuenta')`,
     [DOC_ADMIN, hash]
   );
   adminId = adm.insertId;
@@ -50,14 +50,14 @@ beforeAll(async () => {
   // Clientes existentes
   const [cli1] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, email, password_hash, estado_cuenta)
-     VALUES ('cliente', ?, 'Carlos', 'Perez', '1122334411', ?, ?, 'con_cuenta')`,
+     VALUES ('cliente', ?, 'Tester', 'Alfa', '1100000011', ?, ?, 'con_cuenta')`,
     [DOC_CLIENTE1, EMAIL_CLIENTE1, hash]
   );
   cliente1Id = cli1.insertId;
 
   const [cli2] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, email, password_hash, estado_cuenta)
-     VALUES ('cliente', ?, 'Lucia', 'Gomez', '1122334422', ?, ?, 'sin_cuenta')`,
+     VALUES ('cliente', ?, 'Beta', 'Delta', '1100000012', ?, ?, 'sin_cuenta')`,
     [DOC_CLIENTE2, EMAIL_CLIENTE2, hash]
   );
   cliente2Id = cli2.insertId;
@@ -126,15 +126,15 @@ describe('Autorización en rutas de administración de clientes y mascotas', () 
 describe('GET /api/admin/clientes (Búsqueda)', () => {
   test('lista clientes y permite buscar por nombre o apellido', async () => {
     const res = await request(app)
-      .get('/api/admin/clientes?q=Carlos')
+      .get('/api/admin/clientes?q=Tester')
       .set('Cookie', cookieAdmin);
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     const encontrado = res.body.find((c) => c.documento === DOC_CLIENTE1);
     expect(encontrado).toBeDefined();
-    expect(encontrado.nombre).toBe('Carlos');
-    expect(encontrado.apellido).toBe('Perez');
+    expect(encontrado.nombre).toBe('Tester');
+    expect(encontrado.apellido).toBe('Alfa');
   });
 
   test('permite buscar por documento', async () => {
@@ -145,7 +145,7 @@ describe('GET /api/admin/clientes (Búsqueda)', () => {
     expect(res.status).toBe(200);
     const encontrado = res.body.find((c) => c.documento === DOC_CLIENTE2);
     expect(encontrado).toBeDefined();
-    expect(encontrado.nombre).toBe('Lucia');
+    expect(encontrado.nombre).toBe('Beta');
   });
 
   test('permite buscar por email', async () => {
@@ -166,17 +166,17 @@ describe('POST /api/admin/clientes (Alta asistida)', () => {
       .set('Cookie', cookieAdmin)
       .send({
         documento: DOC_ALTA,
-        nombre: 'Mariana',
-        apellido: 'Lopez',
-        telefono: '1199887766',
+        nombre: 'Gamma',
+        apellido: 'Epsilon',
+        telefono: '1100000015',
         email: EMAIL_ALTA,
       });
 
     expect(res.status).toBe(201);
     expect(res.body.documento).toBe(DOC_ALTA);
-    expect(res.body.nombre).toBe('Mariana');
-    expect(res.body.apellido).toBe('Lopez');
-    expect(res.body.telefono).toBe('1199887766');
+    expect(res.body.nombre).toBe('Gamma');
+    expect(res.body.apellido).toBe('Epsilon');
+    expect(res.body.telefono).toBe('1100000015');
     expect(res.body.email).toBe(EMAIL_ALTA);
     expect(res.body.estado_cuenta).toBe('sin_cuenta');
     expect(res.body.rol).toBe('cliente');
@@ -202,15 +202,15 @@ describe('POST /api/admin/clientes (Alta asistida)', () => {
       .set('Cookie', cookieAdmin)
       .send({
         documento: DOC_CLIENTE1,
-        nombre: 'Otro Carlos',
-        apellido: 'Perez',
-        telefono: '1122334400',
+        nombre: 'Otro Tester',
+        apellido: 'Alfa',
+        telefono: '1100000013',
       });
 
     expect(res.status).toBe(409);
     expect(res.body.codigo).toBe('DOCUMENTO_EXISTENTE');
     expect(res.body.id).toBe(cliente1Id);
-    expect(res.body.mensaje).toContain('Carlos Perez');
+    expect(res.body.mensaje).toContain('Tester Alfa');
   });
 
   test('email duplicado responde 409, incluye id y nombre del cliente existente', async () => {
@@ -221,14 +221,14 @@ describe('POST /api/admin/clientes (Alta asistida)', () => {
         documento: DOC_DUP,
         nombre: 'Nuevo',
         apellido: 'Cliente',
-        telefono: '1122334499',
+        telefono: '1100000014',
         email: EMAIL_CLIENTE2,
       });
 
     expect(res.status).toBe(409);
     expect(res.body.codigo).toBe('EMAIL_DUPLICADO');
     expect(res.body.id).toBe(cliente2Id);
-    expect(res.body.mensaje).toContain('Lucia Gomez');
+    expect(res.body.mensaje).toContain('Beta Delta');
   });
 });
 
@@ -257,17 +257,17 @@ describe('GET y PUT /api/admin/clientes/:id', () => {
       .put(`/api/admin/clientes/${cliente1Id}`)
       .set('Cookie', cookieAdmin)
       .send({
-        nombre: 'Carlos Modificado',
-        apellido: 'Perez Modificado',
-        telefono: '1133334444',
-        email: 'carlos_modificado@vetgestion.test',
+        nombre: 'Tester Modificado',
+        apellido: 'Alfa Modificado',
+        telefono: '1100000016',
+        email: 'tester.modificado@example.com',
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.nombre).toBe('Carlos Modificado');
-    expect(res.body.apellido).toBe('Perez Modificado');
-    expect(res.body.telefono).toBe('1133334444');
-    expect(res.body.email).toBe('carlos_modificado@vetgestion.test');
+    expect(res.body.nombre).toBe('Tester Modificado');
+    expect(res.body.apellido).toBe('Alfa Modificado');
+    expect(res.body.telefono).toBe('1100000016');
+    expect(res.body.email).toBe('tester.modificado@example.com');
   });
 
   test('PUT con email de otro cliente responde 409 con id del duplicado', async () => {
@@ -275,9 +275,9 @@ describe('GET y PUT /api/admin/clientes/:id', () => {
       .put(`/api/admin/clientes/${cliente1Id}`)
       .set('Cookie', cookieAdmin)
       .send({
-        nombre: 'Carlos',
-        apellido: 'Perez',
-        telefono: '1133334444',
+        nombre: 'Tester',
+        apellido: 'Alfa',
+        telefono: '1100000016',
         email: EMAIL_CLIENTE2,
       });
 

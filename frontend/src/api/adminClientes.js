@@ -3,7 +3,7 @@ import { aSnake } from './mascotas.js';
 
 // Endpoints de clientes del administrador (sección 6 del plan, BE-12/BE-13):
 //   GET  /admin/clientes?q=              → buscar por nombre, documento o email
-//   POST /admin/clientes                 → alta asistida (RF01b, RF24)
+//   POST /admin/clientes                 → alta asistida (RF01b, RF17)
 //   GET  /admin/clientes/:id             → ficha del cliente
 //   POST /admin/clientes/:id/desbloquear → desbloquear y contraseña temporal (BE-13)
 //   POST /admin/clientes/:id/anonimizar  → supresión de datos (BE-15, RNF04)
@@ -100,7 +100,7 @@ export function obtener(id) {
   }));
 }
 
-// Alta asistida (POST /admin/clientes, 201, RF01b/RF24). Obligatorios:
+// Alta asistida (POST /admin/clientes, 201, RF01b/RF17). Obligatorios:
 // documento, nombre, apellido y teléfono; email opcional (si viene vacío no
 // se envía). 409 DOCUMENTO_EXISTENTE o EMAIL_DUPLICADO: el backend responde
 // { codigo, mensaje, id } con el id de la ficha existente y el nombre del

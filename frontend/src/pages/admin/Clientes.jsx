@@ -55,7 +55,7 @@ export default function Clientes() {
             valor={termino}
             onChange={setTermino}
             ayuda="Por nombre, documento o email. Dejalo vacío para ver todos."
-            placeholder="Ej.: 30111222 o María Pérez"
+            placeholder="Ej.: 90000001 o Laura Ejemplo"
           />
           <div className="pagina__acciones">
             <button type="submit" className="boton" disabled={buscando}>

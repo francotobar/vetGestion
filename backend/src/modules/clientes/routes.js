@@ -9,7 +9,7 @@ const { mascotaSchema } = require('../mascotas/schema');
 const controladorAtenciones = require('../atenciones/controller');
 
 // Router para /api/admin/clientes (sección 6 del plan, BE-12 y BE-13):
-// Búsqueda, alta asistida (RF01b, RF24), ver/editar cliente, baja lógica, desbloqueo y gestión de sus mascotas.
+// Búsqueda, alta asistida (RF01b, RF17), ver/editar cliente, baja lógica, desbloqueo y gestión de sus mascotas.
 const routerAdminClientes = express.Router();
 routerAdminClientes.use(auth, roles('admin'));
 

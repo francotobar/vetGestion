@@ -49,7 +49,7 @@ beforeAll(async () => {
   // Admin propio
   const [adm] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, email, password_hash, estado_cuenta)
-     VALUES ('admin', ?, 'AdminTest11', 'Root', '1144440000', 'adm11@test.com', ?, 'con_cuenta')`,
+     VALUES ('admin', ?, 'AdminTest11', 'Root', '1100000020', 'adm11@example.com', ?, 'con_cuenta')`,
     [DOC_ADMIN, hash]
   );
   adminId = adm.insertId;
@@ -57,7 +57,7 @@ beforeAll(async () => {
   // Cliente propio
   const [cli] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, email, password_hash, estado_cuenta)
-     VALUES ('cliente', ?, 'ClienteTest11', 'Lopez', '1155556666', 'cli11@test.com', ?, 'con_cuenta')`,
+     VALUES ('cliente', ?, 'ClienteTest11', 'Epsilon', '1100000019', 'cli11@example.com', ?, 'con_cuenta')`,
     [DOC_CLIENTE, hash]
   );
   clienteId = cli.insertId;
@@ -333,9 +333,9 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
     // Datos del cliente para avisar
     expect(res.body.cliente).toEqual({
       nombre: 'ClienteTest11',
-      apellido: 'Lopez',
-      telefono: '1155556666',
-      email: 'cli11@test.com',
+      apellido: 'Epsilon',
+      telefono: '1100000019',
+      email: 'cli11@example.com',
     });
   });
 
@@ -357,7 +357,7 @@ describe('POST /api/admin/turnos/:id/urgencia (urgencia)', () => {
     expect(res.body.turno.fecha_hora).toBe('2026-11-17 16:00:00');
     expect(res.body.turno.es_urgencia).toBe(1);
     expect(res.body.turno.motivo).toBe('Urgencia felina: obstrucción uretral');
-    expect(res.body.cliente.telefono).toBe('1155556666');
+    expect(res.body.cliente.telefono).toBe('1100000019');
   });
 
   test('urgencia con acción reprogramar a franja ocupada devuelve 409 FRANJA_OCUPADA', async () => {

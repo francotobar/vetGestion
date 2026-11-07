@@ -121,7 +121,7 @@ CREATE TABLE notas_atencion (
   CONSTRAINT fk_nota_creado FOREIGN KEY (creado_por) REFERENCES usuarios(id)
 ) ENGINE=InnoDB;
 
--- Inmutabilidad de atenciones (RF26). Ejecutar con el cliente mysql (usa DELIMITER).
+-- Inmutabilidad de atenciones (RF19). Ejecutar con el cliente mysql (usa DELIMITER).
 DELIMITER $$
 CREATE TRIGGER atenciones_no_update BEFORE UPDATE ON atenciones FOR EACH ROW
 BEGIN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Las atenciones son inmutables'; END$$

@@ -76,7 +76,7 @@ function codigoDe(error) {
 // * vista semanal: lunes a domingo con los turnos de cada día;
 // * acciones de estado según el mapa de la sección 5, reprogramación con
 //   SelectorFranja y urgencia (motivo obligatorio) que al terminar muestra
-//   el contacto del cliente para avisarle (RF25).
+//   el contacto del cliente para avisarle (RF18).
 export default function Agenda() {
   const [vista, setVista] = useState('dia'); // 'dia' | 'semana'
   const [fecha, setFecha] = useState(() => dayjs().format('YYYY-MM-DD'));
@@ -106,7 +106,7 @@ export default function Agenda() {
   });
   // Texto de la nota aclaratoria que se agrega bajo una atención.
   const [notaTexto, setNotaTexto] = useState('');
-  // Contacto del cliente tras una urgencia (respuesta del backend, RF25).
+  // Contacto del cliente tras una urgencia (respuesta del backend, RF18).
   const [contacto, setContacto] = useState(null);
 
   // Historiales por mascota (FE-10): la agenda no informa qué turnos
@@ -257,7 +257,7 @@ export default function Agenda() {
         vacunas: formAtencion.vacunas.trim(),
         observaciones: formAtencion.observaciones.trim(),
       });
-      // La atención es inmutable: no se puede editar ni borrar luego (RF26).
+      // La atención es inmutable: no se puede editar ni borrar luego (RF19).
       setAviso('Atención registrada en el historial de la mascota.');
       cerrarAccion();
       invalidarHistorial(turno.mascotaId);
@@ -295,7 +295,7 @@ export default function Agenda() {
     setErrorAccion('');
     try {
       const { data } = await agregarNota(atencion.id, texto);
-      // La nota se agrega debajo sin tocar la atención original (RF27).
+      // La nota se agrega debajo sin tocar la atención original (RF20).
       setHistoriales((prev) => {
         const entrada = prev[turno.mascotaId];
         if (!entrada) return prev;
@@ -421,7 +421,7 @@ export default function Agenda() {
           : `Urgencia registrada: turno reprogramado al ${dayjs(`${fechaNueva} ${horaNueva}`).format('DD/MM/YYYY [a las] HH:mm[h]')}.`
       );
       cerrarAccion();
-      setContacto(data.cliente); // el backend responde el contacto (RF25)
+      setContacto(data.cliente); // el backend responde el contacto (RF18)
       cargar();
     } catch (error) {
       const codigo = codigoDe(error);

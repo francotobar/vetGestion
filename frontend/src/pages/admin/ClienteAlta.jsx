@@ -4,12 +4,12 @@ import { crear } from '../../api/adminClientes.js';
 import { mensajeDeError } from '../../api/cliente.js';
 import Campo from '../../components/Campo.jsx';
 
-// Alta asistida de cliente por el administrador (FE-08, RF01b/RF24), ruta
+// Alta asistida de cliente por el administrador (FE-08, RF01b/RF17), ruta
 // /admin/clientes/nuevo. Obligatorios: documento, nombre, apellido y
 // teléfono; email opcional (igual que altaClienteSchema del backend). El
 // backend crea la cuenta como 'sin_cuenta'. Si el documento o el email ya
 // existen responde 409 con el id de la ficha existente: se muestra el
-// mensaje real de la API y un link a esa ficha (RF24).
+// mensaje real de la API y un link a esa ficha (RF17).
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ClienteAlta() {
@@ -72,7 +72,7 @@ export default function ClienteAlta() {
     } catch (error) {
       const status = error.response?.status;
       if (status === 409) {
-        // RF24: el backend responde { codigo, mensaje, id } con la ficha
+        // RF17: el backend responde { codigo, mensaje, id } con la ficha
         // existente (documento o email duplicado); se muestra tal cual.
         setDuplicado({
           mensaje: mensajeDeError(error, 'Ya existe un cliente con ese documento o email.'),
@@ -105,7 +105,7 @@ export default function ClienteAlta() {
             valor={formulario.documento}
             onChange={cambiar('documento')}
             error={errores.documento}
-            placeholder="Ej.: 30111222"
+            placeholder="Ej.: 90000001"
           />
           <Campo
             id="nombre"
@@ -127,7 +127,7 @@ export default function ClienteAlta() {
             valor={formulario.telefono}
             onChange={cambiar('telefono')}
             error={errores.telefono}
-            placeholder="Ej.: 1155554444"
+            placeholder="Ej.: 1100000001"
           />
           <Campo
             id="email"

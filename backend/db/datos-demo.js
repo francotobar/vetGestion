@@ -52,7 +52,7 @@ function obtenerPasswordAdmin({ requerida }) {
 
 // Carga los datos de demostración sobre una base con el esquema ya aplicado y vacía.
 async function cargarDatosDemo(db, { passwordAdmin }) {
-  // --- Admin inicial (RF22) ---
+  // --- Admin inicial ---
   const hashAdmin = await bcrypt.hash(passwordAdmin, 10);
   const [altaAdmin] = await db.execute(
     `INSERT INTO usuarios
@@ -62,14 +62,14 @@ async function cargarDatosDemo(db, { passwordAdmin }) {
   );
   const adminId = altaAdmin.insertId;
 
-  // --- Catálogo de servicios (RF19) ---
+  // --- Catálogo de servicios (RF13) ---
   const idsServicios = {};
   for (const nombre of ['Consulta general', 'Vacunación', 'Control de peso', 'Desparasitación', 'Castración (consulta)']) {
     const [alta] = await db.execute('INSERT INTO servicios (nombre) VALUES (?)', [nombre]);
     idsServicios[nombre] = alta.insertId;
   }
 
-  // --- Feriados de ejemplo (RF26) ---
+  // --- Feriados de ejemplo (RF16) ---
   for (const feriado of FERIADOS) {
     await db.execute('INSERT INTO feriados (fecha, motivo) VALUES (?, ?)', [feriado.fecha, feriado.motivo]);
   }

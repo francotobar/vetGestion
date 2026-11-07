@@ -6,7 +6,7 @@
 //   email y contraseña → NULL, estado_cuenta → 'inactiva'.
 // - mascotas → activa = 0.
 // - turnos futuros (pendiente/confirmado) → cancelados.
-// - No toca atenciones (RF26, inmutables).
+// - No toca atenciones (RF19, inmutables).
 // Todo en una transacción atómica: si algo falla, no queda un cliente a medias.
 //
 // Reglas: datos propios con prefijo TEST15-, limpieza al terminar contemplando

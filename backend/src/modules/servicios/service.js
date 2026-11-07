@@ -10,7 +10,7 @@ function mapearServicio(fila) {
   };
 }
 
-// El cliente ve solo los activos (RF19); el admin ve el catálogo completo.
+// El cliente ve solo los activos (RF13); el admin ve el catálogo completo.
 async function listarActivos() {
   const [filas] = await pool.execute(
     'SELECT id, nombre, descripcion, activo FROM servicios WHERE activo = 1 ORDER BY nombre'

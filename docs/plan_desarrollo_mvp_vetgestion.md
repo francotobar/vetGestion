@@ -239,7 +239,7 @@ CREATE TABLE notas_atencion (
   CONSTRAINT fk_nota_creado FOREIGN KEY (creado_por) REFERENCES usuarios(id)
 ) ENGINE=InnoDB;
 
--- Inmutabilidad de atenciones (RF26). Ejecutar con el cliente mysql (usa DELIMITER).
+-- Inmutabilidad de atenciones (RF19). Ejecutar con el cliente mysql (usa DELIMITER).
 DELIMITER $$
 CREATE TRIGGER atenciones_no_update BEFORE UPDATE ON atenciones FOR EACH ROW
 BEGIN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Las atenciones son inmutables'; END$$
@@ -355,7 +355,7 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 | PATCH `/admin/turnos/:id/reprogramar` | A | Reprogramar | P0 |
 | POST `/admin/turnos/:id/urgencia` | A | Cancelar/reprogramar por urgencia | P0 |
 | GET `/admin/clientes?q=` | A | Buscar por nombre, documento o email | P0 |
-| POST `/admin/clientes` | A | Alta asistida (RF01b, RF24) | P0 |
+| POST `/admin/clientes` | A | Alta asistida (RF01b, RF17) | P0 |
 | GET/PUT `/admin/clientes/:id` | A | Ver/editar cliente | P0 |
 | POST `/admin/clientes/:id/desbloquear` | A | Desbloquea y fija contraseña temporal | P0 |
 | POST `/admin/clientes/:id/baja` | A | Pasa a `inactiva` y revoca sus sesiones | P0 |
@@ -379,6 +379,7 @@ Todas bajo `/api`. Rol: **P** = pública, **C** = cliente, **A** = admin.
 | `MASCOTA_INACTIVA` | 422 | Reserva, alta de turno manual o reprogramación de una mascota dada de baja |
 | `CONFLICTO_ESTADO` | 409 | Un UPDATE condicionado al estado leído no afectó filas: otra operación cambió el turno entre la lectura y la escritura. No se modifica nada |
 | `FRANJA_OCUPADA` | 409 | Restricción única de la franja (índice `fecha_hora_activa`) |
+| `DOCUMENTO_EXISTENTE` / `EMAIL_DUPLICADO` | 409 | Alta o edición de cliente con documento o email ya usados. En el alta asistida y la edición del administrador la respuesta incluye `id` (la ficha existente) y el nombre en el mensaje; en el registro propio de un cliente responde sin `id` |
 | `TRANSICION_INVALIDA` | 422 | Cambio de estado no permitido por el mapa de transiciones |
 
 En una carrera simultánea, el perdedor recibe 409 `CONFLICTO_ESTADO` si la otra operación terminó mientras él leía el turno, o 422 `TRANSICION_INVALIDA` si la otra terminó antes de su lectura (el turno ya no admite la transición).
@@ -464,7 +465,7 @@ En una carrera simultánea, el perdedor recibe 409 `CONFLICTO_ESTADO` si la otra
 
 ### Día 4 — Clientes, historial clínico, desbloqueo y privacidad (congelamiento de funcionalidades al cierre)
 
-**BE-12 [Franco, P0] Clientes (admin).** Búsqueda, alta asistida (RF01b; obligatorios nombre, apellido, documento, teléfono), edición, baja, y alta/edición de mascotas del cliente. Documento o email duplicado → 409 informando el nombre del cliente existente (RF24; la respuesta no incluye el id de la ficha).
+**BE-12 [Franco, P0] Clientes (admin).** Búsqueda, alta asistida (RF01b; obligatorios nombre, apellido, documento, teléfono), edición, baja, y alta/edición de mascotas del cliente. Documento o email duplicado → 409 informando el nombre del cliente existente (RF17). La respuesta del alta asistida y de la edición incluye `id` (la ficha existente) y el nombre en el mensaje; el registro propio de un cliente responde 409 sin `id` (ver sección 6).
 *Aceptación:* **Dado** un documento existente, **cuando** el admin intenta crearlo de nuevo, **entonces** 409 y el mensaje incluye el nombre del cliente existente.
 
 **BE-13 [Franco, P0] Desbloqueo por admin.** `POST /admin/clientes/:id/desbloquear`.
@@ -510,6 +511,6 @@ Componentes compartidos: `SelectorFranja` (usado por reserva, reprogramación y 
 
 ## 9. Fuera del MVP (documentar como trabajo futuro)
 
-Recordatorios por email 24 h antes (RF13), backups automáticos, disponibilidad garantizada del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales. Quedan también como trabajo futuro la edición de perfil propio por el cliente (RNF04) y el id de la ficha existente en la respuesta de duplicado (RF17). La baja de mascota por el administrador ya está implementada (ver sección 6).
+Recordatorios por email 24 h antes (sin número de RF asignado), backups automáticos, disponibilidad garantizada del 99 %, rol Profesional con agenda propia, notificación automática a clientes afectados por urgencias, duración variable por servicio, y reglas para sábados/horarios especiales. Quedan también como trabajo futuro la edición de perfil propio por el cliente (RNF04) y el id de la ficha existente en la respuesta del registro propio ante un documento o email duplicado (RF17). La baja de mascota por el administrador ya está implementada (ver sección 6).
 
 

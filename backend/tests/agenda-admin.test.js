@@ -29,7 +29,7 @@ beforeAll(async () => {
   // Admin propio del test
   const [adm] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, password_hash, estado_cuenta)
-     VALUES ('admin', ?, 'AdminTest10', 'Root', '1111111000', ?, 'con_cuenta')`,
+     VALUES ('admin', ?, 'AdminTest10', 'Root', '1100000022', ?, 'con_cuenta')`,
     [DOC_ADMIN, hash]
   );
   adminId = adm.insertId;
@@ -37,7 +37,7 @@ beforeAll(async () => {
   // Cliente propio
   const [cli] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, password_hash, estado_cuenta)
-     VALUES ('cliente', ?, 'ClienteTest10', 'Perez', '1122334455', ?, 'con_cuenta')`,
+     VALUES ('cliente', ?, 'ClienteTest10', 'Alfa', '1100000017', ?, 'con_cuenta')`,
     [DOC_CLIENTE, hash]
   );
   clienteId = cli.insertId;
@@ -45,7 +45,7 @@ beforeAll(async () => {
   // Otro cliente
   const [otro] = await pool.execute(
     `INSERT INTO usuarios (rol, documento, nombre, apellido, telefono, password_hash, estado_cuenta)
-     VALUES ('cliente', ?, 'OtroTest10', 'Gomez', '1122334466', ?, 'con_cuenta')`,
+     VALUES ('cliente', ?, 'OtroTest10', 'Delta', '1100000018', ?, 'con_cuenta')`,
     [DOC_OTRO, hash]
   );
   otroId = otro.insertId;
@@ -285,7 +285,7 @@ describe('GET /admin/turnos (agenda admin)', () => {
     const turno1 = res.body.find((t) => t.fecha_hora === '2026-11-19 09:00:00');
     expect(turno1).toBeDefined();
     expect(turno1.cliente_nombre).toBe('ClienteTest10');
-    expect(turno1.cliente_apellido).toBe('Perez');
+    expect(turno1.cliente_apellido).toBe('Alfa');
     expect(turno1.cliente_documento).toBe(DOC_CLIENTE);
     expect(turno1.mascota_nombre).toBe('Firulais10');
     expect(turno1.mascota_especie).toBe('perro');

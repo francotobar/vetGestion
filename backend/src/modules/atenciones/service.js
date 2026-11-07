@@ -17,7 +17,7 @@ async function obtenerTurno(conn, turnoId) {
   return filas[0];
 }
 
-// POST /admin/turnos/:id/atencion (RF26, BE-14).
+// POST /admin/turnos/:id/atencion (RF19, BE-14).
 // Solo se puede cargar si el turno está 'atendido' y aún no tiene atención.
 // Una vez guardada, la atención es inmutable: los triggers impiden UPDATE y DELETE.
 async function cargarAtencion(
@@ -144,7 +144,7 @@ async function obtenerHistorial(mascotaId, { usuarioId } = {}, conn = pool) {
   return [...porAtencion.values()];
 }
 
-// POST /admin/atenciones/:id/notas (RF27, BE-14). Nota aclaratoria: no modifica
+// POST /admin/atenciones/:id/notas (RF20, BE-14). Nota aclaratoria: no modifica
 // el registro original, se agrega debajo con fecha y autor.
 async function agregarNota(adminId, atencionId, { texto }, conn = pool) {
   const [[atencion]] = await conn.execute('SELECT id FROM atenciones WHERE id = ?', [atencionId]);

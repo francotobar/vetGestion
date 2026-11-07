@@ -29,7 +29,7 @@ routerCliente.patch(
   controlador.reprogramar
 );
 
-// Router de turnos admin (RF21, RF25, BE-10, BE-11):
+// Router de turnos admin (RF15, RF18, BE-10, BE-11):
 // Agenda, turno manual, cambio de estado, reprogramación admin y urgencias.
 const routerAdmin = express.Router();
 routerAdmin.use(auth, roles('admin'));

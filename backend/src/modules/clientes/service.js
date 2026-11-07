@@ -60,7 +60,7 @@ async function buscarClientes(q) {
 }
 
 // POST /admin/clientes
-// Alta asistida (RF01b, RF24). Obligatorios: nombre, apellido, documento, teléfono; email opcional.
+// Alta asistida (RF01b, RF17). Obligatorios: nombre, apellido, documento, teléfono; email opcional.
 // Documento o email duplicado → 409 con id de la ficha existente y nombre del cliente existente en el mensaje.
 async function crearCliente(adminId, datos) {
   const { documento, nombre, apellido, telefono } = datos;
@@ -158,7 +158,7 @@ async function obtenerCliente(clienteId) {
 }
 
 // PUT /admin/clientes/:id
-// Editar cliente (RF20).
+// Editar cliente (RF14).
 async function actualizarCliente(adminId, clienteId, datos) {
   // Verificar existencia del cliente
   const clienteActual = await obtenerCliente(clienteId);
@@ -317,7 +317,7 @@ async function desbloquearCliente(adminId, clienteId, datos) {
 // POST /admin/clientes/:id/anonimizar (BE-15, RNF04 Ley 25.326).
 // Anonimiza un cliente por supresión: reemplaza datos personales, deja mascotas
 // inactivas y cancela sus turnos futuros. Todo en una transacción atómica: si
-// algo falla, no queda un cliente a medias. No toca atenciones (RF26, inmutables).
+// algo falla, no queda un cliente a medias. No toca atenciones (RF19, inmutables).
 async function anonimizarCliente(adminId, clienteId) {
   const conn = await pool.getConnection();
   try {

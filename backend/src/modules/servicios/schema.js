@@ -1,6 +1,6 @@
 const { z } = require('zod');
 
-// Catálogo de servicios (RF19): nombre único, descripción opcional y
+// Catálogo de servicios (RF13): nombre único, descripción opcional y
 // activar/desactivar como baja lógica.
 const servicioSchema = z.object({
   nombre: z

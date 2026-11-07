@@ -4,7 +4,7 @@ import { mensajeDeError } from '../../api/cliente.js';
 import Campo from '../../components/Campo.jsx';
 import Modal from '../../components/Modal.jsx';
 
-// Catálogo de servicios del administrador (FE-09, RF19), ruta /admin/servicios.
+// Catálogo de servicios del administrador (FE-09, RF13), ruta /admin/servicios.
 // Permite listar el catálogo completo (activos e inactivos), crear nuevos servicios,
 // editar nombre/descripción y activar/desactivar (baja lógica, sin borrado físico).
 export default function Servicios() {

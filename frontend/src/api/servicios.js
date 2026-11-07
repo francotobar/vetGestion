@@ -1,6 +1,6 @@
 import api from './cliente.js';
 
-// Catálogo de servicios (RF19).
+// Catálogo de servicios (RF13).
 // GET /servicios: solo los activos (público / cliente / admin).
 export function listar() {
   return api.get('/servicios');

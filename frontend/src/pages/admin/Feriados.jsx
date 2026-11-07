@@ -4,7 +4,7 @@ import { mensajeDeError } from '../../api/cliente.js';
 import Campo from '../../components/Campo.jsx';
 import Modal from '../../components/Modal.jsx';
 
-// Feriados del administrador (FE-09, RF23), ruta /admin/feriados.
+// Feriados del administrador (FE-09, RF16), ruta /admin/feriados.
 // Permite listar los feriados registrados, dar de alta nuevos feriados (fecha y motivo)
 // y dar de baja feriados existentes. Los días feriados quedan bloqueados en la reserva.
 

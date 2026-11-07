@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 // Detalle de una atención en modo solo lectura (FE-10): encabezado con fecha
 // del turno, servicio y profesional; los textos que vinieron cargados (los
 // vacíos no se muestran) y, debajo, las notas aclaratorias con su fecha.
-// Las atenciones son inmutables (RF26): nunca hay edición ni borrado.
+// Las atenciones son inmutables (RF19): nunca hay edición ni borrado.
 const CAMPOS = [
   ['anamnesis', 'Anamnesis'],
   ['diagnostico', 'Diagnóstico'],

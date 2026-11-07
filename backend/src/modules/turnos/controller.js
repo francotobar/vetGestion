@@ -65,7 +65,7 @@ async function reprogramar(req, res, next) {
   }
 }
 
-// GET /admin/turnos?desde=&hasta=&estado= (admin, RF21, BE-10).
+// GET /admin/turnos?desde=&hasta=&estado= (admin, RF15, BE-10).
 async function agendaAdmin(req, res, next) {
   try {
     const { agendaAdminQuerySchema } = require('./schema');
@@ -80,7 +80,7 @@ async function agendaAdmin(req, res, next) {
   }
 }
 
-// POST /admin/turnos (admin, RF21, BE-10).
+// POST /admin/turnos (admin, RF15, BE-10).
 async function crearAdmin(req, res, next) {
   try {
     res.status(201).json(await servicio.crearComoAdmin(req.usuario.id, req.body));
@@ -89,7 +89,7 @@ async function crearAdmin(req, res, next) {
   }
 }
 
-// PATCH /admin/turnos/:id/estado (admin, RF21, BE-11).
+// PATCH /admin/turnos/:id/estado (admin, RF15, BE-11).
 async function cambiarEstadoAdmin(req, res, next) {
   try {
     const id = parsearId(req);
@@ -100,7 +100,7 @@ async function cambiarEstadoAdmin(req, res, next) {
   }
 }
 
-// PATCH /admin/turnos/:id/reprogramar (admin, RF21, BE-11).
+// PATCH /admin/turnos/:id/reprogramar (admin, RF15, BE-11).
 async function reprogramarAdmin(req, res, next) {
   try {
     const id = parsearId(req);
@@ -111,7 +111,7 @@ async function reprogramarAdmin(req, res, next) {
   }
 }
 
-// POST /admin/turnos/:id/urgencia (admin, RF25, BE-11).
+// POST /admin/turnos/:id/urgencia (admin, RF18, BE-11).
 async function urgenciaAdmin(req, res, next) {
   try {
     const id = parsearId(req);

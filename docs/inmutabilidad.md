@@ -1,13 +1,13 @@
 # Inmutabilidad de los registros clínicos
 
-Este documento describe cómo se garantiza que los registros clínicos no se modifican ni se borran (RF19 para la atención, RF20 para la nota aclaratoria, y la regla de la especificación: "los registros clínicos no se modifican ni se eliminan; solo se agregan notas aclaratorias"), qué cubre cada mecanismo y cuáles son sus límites reales. El código y algunos tests citan estos requisitos como RF26 y RF27; esa diferencia de numeración está registrada en `docs/DECISIONES.md`.
+Este documento describe cómo se garantiza que los registros clínicos no se modifican ni se borran (RF19 para la atención, RF20 para la nota aclaratoria, y la regla de la especificación: "los registros clínicos no se modifican ni se eliminan; solo se agregan notas aclaratorias"), qué cubre cada mecanismo y cuáles son sus límites reales.
 
 ## Qué se protege
 
 | Registro | Tabla | Protección |
 | --- | --- | --- |
 | Atención clínica (anamnesis, diagnóstico, tratamiento, medicación, vacunas, observaciones) | `atenciones` | Triggers `BEFORE UPDATE` y `BEFORE DELETE` en la base de datos |
-| Nota aclaratoria sobre una atención | `notas_atencion` | Solo se agregan (`INSERT`); no hay endpoint que la edite ni la borre |
+| Nota aclaratoria sobre una atención | `notas_atencion` | Solo se agregan (`INSERT`) desde la aplicación; no hay endpoint que la edite ni la borre. **Sin triggers** (ver limitación 1) |
 
 ## Mecanismo 1: triggers en la base de datos
 
@@ -22,7 +22,7 @@ BEGIN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Las atenciones no se eliminan'
 
 Cualquier `UPDATE` o `DELETE` sobre `atenciones`, venga de la aplicación, de una consola SQL o de un script, falla con `SQLSTATE 45000`. Esta es la garantía principal: no depende de que el código de la aplicación sea correcto.
 
-Los triggers se crean junto con la tabla y la base de datos los conserva. `db:reset` y `demo:reset` los vuelven a crear al recrear el esquema.
+Los triggers se crean junto con la tabla. `db:reset` y `demo:reset` los vuelven a crear al recrear el esquema.
 
 ## Mecanismo 2: sin endpoints de edición ni borrado
 
@@ -55,18 +55,30 @@ La aplicación nunca borra usuarios, mascotas ni turnos. Las bajas son lógicas:
 **Comprobación manual en la base:**
 
 ```sql
-SHOW TRIGGERS WHERE `Table` = 'atenciones';
--- Deben aparecer atenciones_no_update (BEFORE UPDATE) y atenciones_no_delete (BEFORE DELETE).
+SELECT TRIGGER_NAME, EVENT_MANIPULATION, ACTION_TIMING
+  FROM information_schema.TRIGGERS
+ WHERE TRIGGER_SCHEMA = 'vetgestion' AND EVENT_OBJECT_TABLE = 'atenciones';
+-- Deben aparecer atenciones_no_update (UPDATE, BEFORE) y atenciones_no_delete (DELETE, BEFORE).
 ```
+
+(`SHOW TRIGGERS` también sirve con un usuario que tenga privilegio `TRIGGER`.)
 
 **Comprobación de la aplicación:** buscar en `backend/src` sentencias `UPDATE` o `DELETE` que afecten a `atenciones` o `notas_atencion` (resultado esperado: ninguna).
 
 ## Limitaciones conocidas
 
-1. **Las notas no tienen triggers.** `notas_atencion` no tiene triggers `BEFORE UPDATE`/`BEFORE DELETE`. La aplicación no las modifica ni las borra, pero una consulta SQL directa sí podría hacerlo. Si la inmutabilidad debe ser total también para las notas, hace falta agregar esos dos triggers (decisión pendiente).
-2. **`TRUNCATE` no dispara triggers de `DELETE`.** Vaciar la tabla con `TRUNCATE atenciones` elimina los registros sin que el trigger lo impida. Lo mismo ocurre con `DROP TABLE`, que además elimina los triggers.
-3. **`demo:reset` borra tablas.** Por diseño, el script de demostración elimina y recrea `atenciones` (y sus triggers) para cargar datos ficticios. Solo debe ejecutarse sobre una base de demostración. Por eso pide confirmar el nombre de la base y verifica antes que puede crear triggers.
-4. **Quien administra la base puede eliminar los triggers.** Un usuario con privilegio `TRIGGER` o `ALTER` puede ejecutar `DROP TRIGGER`. Además, el usuario de la aplicación configurado en `.env` puede tener todos los privilegios sobre la base (`GRANT ALL`), y en ese caso también podría eliminarlos. La protección real depende de que el usuario de la aplicación tenga solo los privilegios necesarios (`SELECT`, `INSERT`, `UPDATE`, `DELETE` sobre las tablas que usa la aplicación, sin `TRIGGER`, `ALTER` ni `DROP`). Esa configuración no está automatizada en el proyecto.
-5. **Backups y restauraciones.** Un `mysqldump` restaurado en otra base recrea los triggers, pero una restauración que sustituya la base reemplaza también los datos que hubiera. La inmutabilidad protege contra modificaciones posteriores, no contra una decisión de restaurar un respaldo anterior.
-6. **Requisito de entorno local.** Con el binlog activo, MySQL exige el privilegio `SUPER` o `log_bin_trust_function_creators = 1` para crear triggers. En el entorno de desarrollo se usa esta última variable (ver `README.md`).
-7. **Carreras entre reservas y bajas.** No afectan a la inmutabilidad de los registros clínicos, pero son parte del estado real del proyecto: las reservas y reprogramaciones bloquean la fila de la mascota antes de validar y escribir, y la baja bloquea la misma fila antes de cancelar turnos futuros. Un turno nuevo no puede quedar activo para una mascota inactiva (test `reservas-bloqueo-mascota.test.js`).
+1. **Las notas no tienen triggers.** `notas_atencion` no tiene triggers `BEFORE UPDATE` ni `BEFORE DELETE`. La aplicación no las modifica ni las borra, pero una consulta SQL directa sobre la tabla sí podría hacerlo. *Mitigación posible (no implementada):* agregar dos triggers, `BEFORE UPDATE` y `BEFORE DELETE` sobre `notas_atencion`, con el mismo patrón que los de `atenciones`.
+
+2. **`TRUNCATE` no dispara triggers de `DELETE`.** Vaciar la tabla con `TRUNCATE atenciones` elimina los registros sin que el trigger lo impida. Lo mismo ocurre con `DROP TABLE`, que además elimina los triggers. *Mitigación posible (no implementada):* no conceder `DROP` ni `TRUNCATE` al usuario de la aplicación (ver limitación 3).
+
+3. **Privilegio `ALL` del usuario de la aplicación.** Verificado con `SHOW GRANTS`: el usuario con el que la aplicación se conecta tiene `GRANT ALL PRIVILEGES ON vetgestion.*`. Con ese privilegio puede eliminar los triggers (`DROP TRIGGER`), borrar tablas o vaciarlas. *Mitigación posible (no implementada):* crear un usuario de aplicación con solo `SELECT`, `INSERT`, `UPDATE` y `DELETE` sobre las tablas que usa la aplicación, sin `TRIGGER`, `ALTER`, `DROP` ni `CREATE`; y usar un usuario administrador aparte únicamente para `schema.sql`, las migraciones y `demo:reset`, que necesitan crear y borrar tablas. Esta configuración no está automatizada en el proyecto.
+
+4. **`demo:reset` borra tablas.** Por diseño, el script de demostración elimina y recrea `atenciones` (y sus triggers) para cargar datos ficticios. Solo debe ejecutarse sobre una base de demostración. Por eso pide confirmar el nombre de la base y verifica antes que puede crear triggers.
+
+5. **Quien administra la base puede eliminar los triggers.** Un usuario con privilegio `TRIGGER` o `ALTER` puede ejecutar `DROP TRIGGER`. La protección real depende de limitar los privilegios del usuario de la aplicación (limitación 3).
+
+6. **Backups y restauraciones.** Un `mysqldump` restaurado en otra base recrea los triggers, pero una restauración que sustituya la base reemplaza también los datos que hubiera. La inmutabilidad protege contra modificaciones posteriores, no contra una decisión de restaurar un respaldo anterior.
+
+7. **Requisito de entorno local.** Con el binlog activo, MySQL exige el privilegio `SUPER` o `log_bin_trust_function_creators = 1` para crear triggers. En el entorno de desarrollo se usa esta última variable (ver `README.md`).
+
+8. **Carreras entre reservas y bajas.** No afectan a la inmutabilidad de los registros clínicos, pero forman parte del estado real del proyecto: las reservas y reprogramaciones bloquean la fila de la mascota antes de validar y escribir, y la baja bloquea la misma fila antes de cancelar turnos futuros. Un turno nuevo no puede quedar activo para una mascota inactiva (test `reservas-bloqueo-mascota.test.js`).

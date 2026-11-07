@@ -9,7 +9,7 @@ import Campo from '../../components/Campo.jsx';
 import SelectorFranja from '../../components/SelectorFranja.jsx';
 import FormMascota, { mascotaVacia } from '../../components/FormMascota.jsx';
 
-// Turno manual del administrador (FE-07, RF21), ruta /admin/turnos/nuevo.
+// Turno manual del administrador (FE-07, RF15), ruta /admin/turnos/nuevo.
 // Asistente de 5 pasos: Cliente (búsqueda por documento/nombre, BE-12) →
 // Mascota (las del cliente, GET /admin/clientes/:id/mascotas; si no tiene, o
 // si el admin la agrega, alta con FormMascota) → Servicio →
@@ -193,7 +193,7 @@ export default function TurnoManual() {
     setErrorMascota('');
   }
 
-  // Pantalla de éxito: el turno manual nace 'confirmado' (RF21, BE-10).
+  // Pantalla de éxito: el turno manual nace 'confirmado' (RF15, BE-10).
   if (turnoCreado) {
     return (
       <section className="pagina">
@@ -282,7 +282,7 @@ export default function TurnoManual() {
               valor={termino}
               onChange={setTermino}
               ayuda="Por nombre, documento o email. Dejalo vacío para ver todos."
-              placeholder="Ej.: 30111222 o María Pérez"
+              placeholder="Ej.: 90000001 o Laura Ejemplo"
             />
             <div className="pagina__acciones">
               <button type="submit" className="boton" disabled={buscando}>

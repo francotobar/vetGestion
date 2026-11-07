@@ -9,7 +9,7 @@ const { feriadoSchema } = require('./schema');
 const routerPublico = express.Router();
 routerPublico.get('/', auth, roles('admin', 'cliente'), controlador.listar);
 
-// Alta y baja de feriados, solo admin (RF23).
+// Alta y baja de feriados, solo admin (RF16).
 const routerAdmin = express.Router();
 routerAdmin.use(auth, roles('admin'));
 routerAdmin.post('/', validar(feriadoSchema), controlador.crear);

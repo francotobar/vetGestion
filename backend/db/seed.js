@@ -27,7 +27,7 @@ async function main() {
 
   try {
     // Reejecución segura: si hay atenciones cargadas no se toca nada
-    // (son inmutables por RF26; para empezar de cero está demo:reset).
+    // (son inmutables por RF19; para empezar de cero está demo:reset).
     const [[{ total: totalAtenciones }]] = await db.query('SELECT COUNT(*) AS total FROM atenciones');
     if (totalAtenciones > 0) {
       throw new Error('Hay atenciones cargadas en la base. Ejecutá npm run demo:reset antes de volver a correr el seed.');

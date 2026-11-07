@@ -54,7 +54,7 @@ const agendaAdminQuerySchema = z.object({
     .optional(),
 });
 
-// POST /admin/turnos (turno manual por admin, RF21)
+// POST /admin/turnos (turno manual por admin, RF15)
 const crearTurnoAdminSchema = z.object({
   usuario_id: enteroPositivo('usuario_id', 'El cliente'),
   mascota_id: enteroPositivo('mascota_id', 'La mascota'),
@@ -70,14 +70,14 @@ const crearTurnoAdminSchema = z.object({
   }),
 });
 
-// PATCH /admin/turnos/:id/estado (admin, RF21, BE-11)
+// PATCH /admin/turnos/:id/estado (admin, RF15, BE-11)
 const cambiarEstadoSchema = z.object({
   estado: z.enum(['pendiente', 'confirmado', 'atendido', 'ausente', 'cancelado'], {
     errorMap: () => ({ message: 'Estado de turno no válido' }),
   }),
 });
 
-// POST /admin/turnos/:id/urgencia (admin, RF25, BE-11)
+// POST /admin/turnos/:id/urgencia (admin, RF18, BE-11)
 const urgenciaSchema = z
   .object({
     accion: z.enum(['cancelar', 'reprogramar'], {

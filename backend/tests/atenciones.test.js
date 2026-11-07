@@ -9,7 +9,7 @@
 //
 // Reglas del plan:
 // - No existen endpoints PUT/DELETE de atenciones.
-// - Las atenciones son inmutables (RF26): los triggers impiden UPDATE y DELETE.
+// - Las atenciones son inmutables (RF19): los triggers impiden UPDATE y DELETE.
 //   Ningún test hace DELETE FROM atenciones. Todo lo que escribe atenciones lo
 //   hace dentro de una transacción con ROLLBACK para no dejar residuos que
 //   impidan volver a correr `npm run seed` (el seed se niega si hay atenciones).
@@ -304,7 +304,7 @@ describe('Atenciones (service, transacción con rollback - sin residuos)', () =>
     expect(error).toMatchObject({ status: 404, codigo: 'NO_ENCONTRADO' });
   });
 
-  test('trigger rechaza UPDATE y DELETE sobre atenciones (RF26)', async () => {
+  test('trigger rechaza UPDATE y DELETE sobre atenciones (RF19)', async () => {
     let atencionId;
     await conTransaccion(async (conn) => {
       const atencion = await servicio.cargarAtencion(adminId, turnoAtendidoId, { profesional_nombre: 'Dr. X' }, conn);

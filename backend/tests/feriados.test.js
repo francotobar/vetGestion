@@ -1,4 +1,4 @@
-// Tests de feriados (BE-06). RF23: el admin da de alta y de baja; el
+// Tests de feriados (BE-06). RF16: el admin da de alta y de baja; el
 // cliente/admin consulta la lista.
 //
 // No alteran el seed: usuarios "TEST06F-*" y un feriado propio

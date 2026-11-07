@@ -9,7 +9,7 @@ const { servicioSchema } = require('./schema');
 const routerPublico = express.Router();
 routerPublico.get('/', auth, roles('admin', 'cliente'), controlador.listarActivos);
 
-// ABM del catálogo, solo admin (RF19): ve el catálogo completo y puede
+// ABM del catálogo, solo admin (RF13): ve el catálogo completo y puede
 // crear, editar y activar/desactivar.
 const routerAdmin = express.Router();
 routerAdmin.use(auth, roles('admin'));

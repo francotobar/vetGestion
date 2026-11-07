@@ -12,7 +12,7 @@ También se ejecuta en local.
 ## Comandos
 - Backend: `cd backend && npm run dev` | `npm test` | `npm run db:reset` | `npm run seed` | `npm run demo:reset`
 - Frontend: `cd frontend && npm run dev` | `npm run build`
-- En Windows, `npm test` usa la sintaxis `TZ=...` de Unix: definir antes `$env:TZ='America/Argentina/Buenos_Aires'` y ejecutar `npx jest --runInBand`.
+- `npm test` corre en serie (`--runInBand`) porque las suites comparten la base local; funciona en Linux y Windows.
 
 ## Stack
 - Backend: Node 20, Express 4, MySQL 8 con `mysql2`, validación con `zod`, JWT en cookie httpOnly.

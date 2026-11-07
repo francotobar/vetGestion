@@ -333,7 +333,7 @@ async function listarAgendaAdmin({ desde, hasta, estado } = {}) {
   return turnos;
 }
 
-// POST /admin/turnos (turno manual por admin, RF21 y BE-10)
+// POST /admin/turnos (turno manual por admin, RF15 y BE-10)
 // Reglas sección 5:
 // - canal ∈ {telefonico, presencial}
 // - estado='confirmado'
@@ -385,7 +385,7 @@ async function crearComoAdmin(
   return obtenerTurno(turnoId);
 }
 
-// Mapa de transiciones válidas de turnos (sección 5 del plan y RF21)
+// Mapa de transiciones válidas de turnos (sección 5 del plan y RF15)
 const TRANSICIONES = {
   pendiente: ['confirmado', 'cancelado'],
   confirmado: ['atendido', 'ausente', 'cancelado'],
@@ -394,7 +394,7 @@ const TRANSICIONES = {
   cancelado: [],
 };
 
-// PATCH /admin/turnos/:id/estado (admin, RF21, BE-11)
+// PATCH /admin/turnos/:id/estado (admin, RF15, BE-11)
 async function cambiarEstado(adminId, turnoId, nuevoEstado) {
   const [[turno]] = await pool.execute('SELECT id, estado FROM turnos WHERE id = ?', [turnoId]);
   if (!turno) {
@@ -419,7 +419,7 @@ async function cambiarEstado(adminId, turnoId, nuevoEstado) {
   return obtenerTurno(turnoId);
 }
 
-// PATCH /admin/turnos/:id/reprogramar (admin, sección 5 y RF21, BE-11)
+// PATCH /admin/turnos/:id/reprogramar (admin, sección 5 y RF15, BE-11)
 // Igual que el del cliente, sin antelación mínima y conservando el estado.
 async function reprogramarComoAdmin(
   adminId,
@@ -471,7 +471,7 @@ async function reprogramarComoAdmin(
   return obtenerTurno(turnoId);
 }
 
-// POST /admin/turnos/:id/urgencia (admin, RF25, BE-11)
+// POST /admin/turnos/:id/urgencia (admin, RF18, BE-11)
 // * Sin antelación mínima. motivo obligatorio.
 // * accion='cancelar' → estado 'cancelado'.
 // * accion='reprogramar' → nueva franja validada (mismas reglas, 409 si ocupada), conserva estado.

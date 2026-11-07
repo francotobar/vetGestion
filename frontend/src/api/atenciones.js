@@ -3,11 +3,11 @@ import api from './cliente.js';
 // Endpoints de atenciones e historial clínico (sección 6 del plan, BE-14):
 //   GET  /mascotas/:id/historial       → historial de la mascota propia (C)
 //   GET  /admin/mascotas/:id/historial → historial completo (A)
-//   POST /admin/turnos/:id/atencion    → cargar atención (A), RF26
-//   POST /admin/atenciones/:id/notas   → nota aclaratoria (A), RF27
+//   POST /admin/turnos/:id/atencion    → cargar atención (A), RF19
+//   POST /admin/atenciones/:id/notas   → nota aclaratoria (A), RF20
 //
 // No existen PUT/DELETE de atenciones: son inmutables (los triggers de la BD
-// impiden UPDATE y DELETE, RF26), por eso la UI no ofrece editar ni borrar.
+// impiden UPDATE y DELETE, RF19), por eso la UI no ofrece editar ni borrar.
 // El backend usa snake_case en las respuestas y en los cuerpos
 // (profesional_nombre, anamnesis…). La conversión vive solo en esta capa,
 // como en api/mascotas.js y api/adminTurnos.js.
@@ -45,7 +45,7 @@ function aCamelAtencion(atencion) {
   };
 }
 
-// Historial de la mascota propia (GET /mascotas/:id/historial, RF26): el
+// Historial de la mascota propia (GET /mascotas/:id/historial, RF19): el
 // backend devuelve las atenciones en orden cronológico inverso, con las notas
 // de cada una en orden ascendente. 404 si la mascota no existe o es ajena.
 export function historialCliente(id) {
@@ -65,7 +65,7 @@ export function historialAdmin(id) {
   }));
 }
 
-// Cargar atención (POST /admin/turnos/:id/atencion, 201, RF26): solo para
+// Cargar atención (POST /admin/turnos/:id/atencion, 201, RF19): solo para
 // turnos en estado 'atendido' y sin atención previa. Errores: 404 (turno
 // inexistente), 422 TURNO_NO_ATENDIDO, 409 ATENCION_YA_EXISTE. El backend
 // responde la atención creada con sus notas vacías.
@@ -84,7 +84,7 @@ export function cargarAtencion(turnoId, datos) {
   }));
 }
 
-// Nota aclaratoria (POST /admin/atenciones/:id/notas, 201, RF27): agrega la
+// Nota aclaratoria (POST /admin/atenciones/:id/notas, 201, RF20): agrega la
 // nota debajo de la atención sin modificarla. 404 si la atención no existe.
 export function agregarNota(atencionId, texto) {
   return api.post(`/admin/atenciones/${atencionId}/notas`, { texto }).then((respuesta) => ({

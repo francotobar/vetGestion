@@ -1,6 +1,6 @@
 const { z } = require('zod');
 
-// POST /admin/turnos/:id/atencion (RF26, BE-14). Zod valida solo el formato;
+// POST /admin/turnos/:id/atencion (RF19, BE-14). Zod valida solo el formato;
 // las reglas de negocio (turno 'atendido', sin atención previa) viven en el service.
 const cargarAtencionSchema = z.object({
   profesional_nombre: z
@@ -16,7 +16,7 @@ const cargarAtencionSchema = z.object({
   observaciones: z.string().optional(),
 });
 
-// POST /admin/atenciones/:id/notas (RF27, BE-14).
+// POST /admin/atenciones/:id/notas (RF20, BE-14).
 const notaSchema = z.object({
   texto: z
     .string({ required_error: 'El texto de la nota es obligatorio' })
